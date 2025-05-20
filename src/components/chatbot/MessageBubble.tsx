@@ -164,7 +164,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 <motion.div
                     className={`rounded-lg px-4 py-2 ${isBot
                         ? 'bg-gray-800 border border-gray-700 text-gray-100 text-left'
-                        : 'bg-indigo-700 text-white text-right'
+                        : 'bg-indigo-600 border border-indigo-500 shadow-sm text-white text-left flex flex-col'
                         }`}
                     initial={{ opacity: 0, scale: 0.8, x: isBot ? -20 : 20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -172,9 +172,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 >
                     {/* Show only intro text when appointment slots are available */}
                     {(!displaySlots || displaySlots.length === 0) ? (
-                        <p className="whitespace-pre-wrap break-words">{text}</p>
+                        <p className={`whitespace-pre-wrap break-words leading-relaxed tracking-wide ${!isBot ? 'font-medium' : ''}`}>{text}</p>
                     ) : (
-                        <p className="whitespace-pre-wrap break-words">{introText}</p>
+                        <p className={`whitespace-pre-wrap break-words leading-relaxed tracking-wide ${!isBot ? 'font-medium' : ''}`}>{introText}</p>
                     )}
 
                     {/* Regular options */}
@@ -338,7 +338,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </motion.div>
 
                 <motion.span
-                    className={`text-xs mt-1 text-gray-400 ${isBot ? 'ml-1' : 'mr-1 self-end'}`}
+                    className={`text-xs mt-1 text-gray-400 ${isBot ? 'ml-1' : 'mr-1 self-end font-medium'}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 }}
@@ -349,7 +349,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
             {!isBot && (
                 <motion.div
-                    className="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center ml-2 mt-1"
+                    className="w-8 h-8 rounded-full bg-indigo-600 border border-indigo-500 shadow-md flex items-center justify-center ml-2 mt-1"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, delay: 0.1 }}
