@@ -10,8 +10,9 @@ export * from './apiKeyStorage';
 
 // Components
 export { default as OrganizationChatbot } from './OrganizationChatbot';
-export { default as OrganizationManager } from './OrganizationManager';
-export { default as SaasApp } from './SaasApp';
+export { default as ChatBot } from './ChatBot';
+// export { default as OrganizationManager } from './OrganizationManager';
+// export { default as SaasApp } from './SaasApp';
 
 // Demo utilities
 export * as demoUtils from './demo';

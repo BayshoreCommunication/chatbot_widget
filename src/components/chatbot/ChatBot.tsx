@@ -3,13 +3,25 @@ import ChatHeader from './ChatHeader';
 import ChatBody from './ChatBody';
 import ChatInput from './ChatInput';
 import type { Message, BotMode, AppointmentSlot } from './types';
-import chatApi from './api';
+import chatApi, { ChatApi } from './api';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const ChatBot: React.FC = () => {
+interface ChatBotProps {
+    apiKey?: string;
+    customApiUrl?: string;
+    embedded?: boolean;
+    initiallyOpen?: boolean;
+}
+
+const ChatBot: React.FC<ChatBotProps> = ({
+    apiKey,
+    customApiUrl,
+    embedded = false,
+    initiallyOpen = false
+}) => {
     const [messages, setMessages] = useState<Message[]>([]);
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(initiallyOpen || false);
     const [isTyping, setIsTyping] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isPositioningScroll, setIsPositioningScroll] = useState(false);
@@ -27,6 +39,20 @@ const ChatBot: React.FC = () => {
         'Looking for information? Just ask me!',
         'Let me assist you today. Click to open.'
     ];
+
+    // Use provided API key or create custom API instance if needed
+    const [api, setApi] = useState(chatApi);
+
+    // Set up custom API instance if apiKey is provided
+    useEffect(() => {
+        if (apiKey) {
+            const config = {
+                apiKey,
+                ...(customApiUrl ? { apiUrl: customApiUrl } : {})
+            };
+            setApi(new ChatApi(config));
+        }
+    }, [apiKey, customApiUrl]);
 
     const [sessionId] = useState<string>(() => {
         // Try to get existing session from localStorage, or create a new one
@@ -62,22 +88,11 @@ const ChatBot: React.FC = () => {
             setIsLoading(true);
             try {
                 console.log("Fetching history with session ID:", savedSession);
-                const response = await fetch(`http://127.0.0.1:8000/chatbot/history/${savedSession}`, {
-                    method: 'GET',
-                    headers: {
-                        'X-API-Key': 'org_sk_5e0fbaa347d2b4658002212f97e5f818',
-                        'Content-Type': 'application/json'
-                    }
-                });
+                // Use the api instance which might be using the custom API key
+                const response = await api.getConversationHistory(savedSession);
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch history: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (data.user_data && data.user_data.conversation_history) {
-                    const historyMessages = chatApi.convertToMessages(data.user_data.conversation_history);
+                if (response.user_data && response.user_data.conversation_history) {
+                    const historyMessages = api.convertToMessages(response.user_data.conversation_history);
                     if (historyMessages.length > 0) {
                         console.log("Setting messages from history:", historyMessages.length);
 
@@ -92,8 +107,8 @@ const ChatBot: React.FC = () => {
                             setMessages(historyMessages);
 
                             // Update the mode if it's in the response
-                            if (data.mode) {
-                                setCurrentMode(data.mode as BotMode);
+                            if (response.mode) {
+                                setCurrentMode(response.mode as BotMode);
                             }
 
                             // Force scroll to bottom after messages are set
@@ -243,7 +258,7 @@ const ChatBot: React.FC = () => {
 
         try {
             // Call the API
-            const response = await chatApi.sendMessage({
+            const response = await api.sendMessage({
                 message: text,
                 sessionId
             });
@@ -257,7 +272,7 @@ const ChatBot: React.FC = () => {
             if (response.user_data) {
                 // If this is the first response and we have history, update the messages
                 if (messages.length <= 1) {
-                    const historyMessages = chatApi.convertToMessages(response.user_data.conversation_history);
+                    const historyMessages = api.convertToMessages(response.user_data.conversation_history);
                     setMessages(historyMessages);
                 } else {
                     // Create bot response message
@@ -269,7 +284,7 @@ const ChatBot: React.FC = () => {
                     };
 
                     // Check if the message contains appointment slots
-                    const appointmentSlots = chatApi.parseAppointmentSlots(response.answer);
+                    const appointmentSlots = api.parseAppointmentSlots(response.answer);
                     if (appointmentSlots) {
                         botMessage.appointmentSlots = appointmentSlots;
                     }
@@ -327,7 +342,7 @@ const ChatBot: React.FC = () => {
 
         try {
             // Call the API with slot confirmation
-            const response = await chatApi.confirmAppointmentSlot({
+            const response = await api.confirmAppointmentSlot({
                 slotId: slot.id,
                 sessionId,
                 day: slot.day,
@@ -375,64 +390,62 @@ const ChatBot: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50">
-            <AnimatePresence mode="wait">
-                {!isOpen ? (
-                    <motion.div
-                        className="relative"
-                        key="chat-button"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                    >
-                        {showTooltip && (
-                            <motion.div
-                                className="absolute bottom-[12%] right-20 bg-indigo-800 text-white p-3 rounded-lg shadow-md transform translate-y-1/2 min-w-[120px] max-w-[320px] w-auto text-sm mr-2"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <div className="relative">
-                                    <motion.div
-                                        key={tooltipKey}
-                                        className="typing-animation whitespace-normal"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ duration: 0.5 }}
-                                    >
-                                        {tooltipText}
-                                    </motion.div>
-                                </div>
-                            </motion.div>
-                        )}
-                        <motion.button
-                            onClick={toggleChat}
-                            className={`w-16 h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors ${showTooltip ? 'animate-pulse-indigo' : ''}`}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
+        <div className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 ${embedded ? 'w-full h-full bottom-0 right-0 left-0 top-0' : ''}`}>
+            {!embedded && (
+                <AnimatePresence>
+                    {showTooltip && !isOpen && (
+                        <motion.div
+                            key={tooltipKey}
+                            className="absolute bottom-[12%] right-16 sm:right-20 bg-indigo-800 text-white p-2 sm:p-3 rounded-lg shadow-md transform translate-y-1/2 min-w-[100px] sm:min-w-[120px] max-w-[240px] sm:max-w-[320px] w-auto text-xs sm:text-sm mr-1 sm:mr-2"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.3 }}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                            </svg>
-                        </motion.button>
-                    </motion.div>
-                ) : (
+                            <div className="relative">
+                                <motion.div
+                                    key={tooltipKey}
+                                    className="typing-animation whitespace-normal"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ duration: 0.5 }}
+                                >
+                                    {tooltipText}
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            )}
+
+            {!embedded && (
+                <motion.button
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors"
+                    onClick={toggleChat}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                </motion.button>
+            )}
+
+            <AnimatePresence>
+                {(isOpen || embedded) && (
                     <motion.div
-                        className="w-96 h-[500px] bg-gray-800 rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-700 text-gray-100"
-                        key="chat-window"
+                        className={`w-full ${embedded ? 'h-screen' : 'h-[calc(100vh-2rem)] sm:h-[500px]'} sm:w-[350px] md:w-96 bg-gray-800 rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-700 text-gray-100 ${embedded ? 'fixed inset-0' : 'fixed bottom-0 right-0 sm:relative'}`}
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.9 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                         ref={chatBodyRef}
-                        onAnimationComplete={() => {
-                            // Force scroll to bottom after animation completes
-                            forceScrollToBottom();
-                        }}
                     >
-                        <ChatHeader toggleChat={toggleChat} currentMode={currentMode} isLoading={isLoading || isPositioningScroll} />
+                        <ChatHeader
+                            toggleChat={toggleChat}
+                            currentMode={currentMode}
+                            isLoading={isLoading || isPositioningScroll}
+                        />
                         {isLoading || isPositioningScroll ? (
                             <motion.div
                                 className="flex-1 flex items-center justify-center bg-gray-900"
@@ -461,7 +474,10 @@ const ChatBot: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3 }}
                         >
-                            <ChatInput sendMessage={sendMessage} disabled={isTyping || isLoading || isPositioningScroll} />
+                            <ChatInput
+                                sendMessage={sendMessage}
+                                disabled={isTyping || isLoading || isPositioningScroll}
+                            />
                         </motion.div>
                     </motion.div>
                 )}

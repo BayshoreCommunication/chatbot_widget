@@ -30,7 +30,7 @@ export interface ChatApiConfig {
 
 // Default API configuration
 const DEFAULT_CONFIG: ChatApiConfig = {
-    apiUrl: 'http://127.0.0.1:8000/chatbot/ask',
+    apiUrl: 'https://35.170.246.79/chatbot/ask',
     apiKey: 'org_sk_5e0fbaa347d2b4658002212f97e5f818'
 };
 
@@ -45,7 +45,7 @@ export class ChatApi {
     async getConversationHistory(sessionId: string): Promise<ChatResponse> {
         try {
             // Use the direct history endpoint
-            const response = await fetch(`http://127.0.0.1:8000/chatbot/history/${sessionId}`, {
+            const response = await fetch(`https://35.170.246.79/chatbot/history/${sessionId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
