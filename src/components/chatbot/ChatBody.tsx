@@ -101,7 +101,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
 
     return (
         <motion.div
-            className="flex-1 overflow-y-auto p-4 bg-gray-900"
+            className="flex-1 overflow-y-auto p-4 bg-gray-900 chat-scroll-container"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
