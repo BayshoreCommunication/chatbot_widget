@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "build:widget": "node scripts/build-widget.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "vercel --prod"
   },
   "dependencies": {
     "framer-motion": "^10.16.4",

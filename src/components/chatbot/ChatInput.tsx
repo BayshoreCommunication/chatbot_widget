@@ -3,9 +3,10 @@ import { useState, type FormEvent, type KeyboardEvent } from 'react';
 interface ChatInputProps {
     sendMessage: (text: string) => void;
     disabled: boolean;
+    embedded?: boolean;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ sendMessage, disabled }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ sendMessage, disabled, embedded = false }) => {
     const [inputValue, setInputValue] = useState('');
 
     const handleSubmit = (e: FormEvent) => {
@@ -25,7 +26,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ sendMessage, disabled }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="border-t border-gray-700 p-4 bg-gray-800">
+        <form onSubmit={handleSubmit} className={`border-t border-gray-700 p-4 bg-gray-800 ${embedded ? 'pb-safe' : ''}`}>
             <div className="flex items-end">
                 <textarea
                     value={inputValue}

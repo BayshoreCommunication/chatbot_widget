@@ -12,13 +12,15 @@ interface ChatBotProps {
     customApiUrl?: string;
     embedded?: boolean;
     initiallyOpen?: boolean;
+    onToggleChat?: () => void;
 }
 
 const ChatBot: React.FC<ChatBotProps> = ({
     apiKey,
     customApiUrl,
     embedded = false,
-    initiallyOpen = false
+    initiallyOpen = false,
+    onToggleChat
 }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isOpen, setIsOpen] = useState(initiallyOpen || false);
@@ -234,6 +236,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
         if (tooltipTimeoutRef.current) {
             clearTimeout(tooltipTimeoutRef.current);
         }
+
+        // Call the onToggleChat callback if provided
+        if (onToggleChat) {
+            onToggleChat();
+        }
     };
 
     const handleOptionClick = (option: string) => {
@@ -390,7 +397,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     };
 
     return (
-        <div className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 ${embedded ? 'w-full h-full bottom-0 right-0 left-0 top-0' : ''}`}>
+        <div className={`fixed ${embedded ? 'inset-0 w-full h-full m-0' : 'bottom-4 right-4 sm:bottom-6 sm:right-6'} z-50`}>
             {!embedded && (
                 <AnimatePresence>
                     {showTooltip && !isOpen && (
@@ -434,7 +441,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
             <AnimatePresence>
                 {(isOpen || embedded) && (
                     <motion.div
-                        className={`w-full ${embedded ? 'h-screen' : 'h-[calc(100vh-2rem)] sm:h-[500px]'} sm:w-[350px] md:w-96 bg-gray-800 rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-700 text-gray-100 ${embedded ? 'fixed inset-0' : 'fixed bottom-0 right-0 sm:relative'}`}
+                        className={`w-full ${embedded ? 'h-full' : 'h-[calc(100vh-2rem)] sm:h-[500px]'} sm:w-[350px] md:w-96 bg-gray-800 rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-700 text-gray-100 ${embedded ? 'fixed inset-0 m-0 p-0 rounded-none' : 'fixed bottom-0 right-0 sm:relative'}`}
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -470,6 +477,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                             />
                         )}
                         <motion.div
+                            className={embedded ? 'mb-0 pb-0' : ''}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3 }}
@@ -477,6 +485,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                             <ChatInput
                                 sendMessage={sendMessage}
                                 disabled={isTyping || isLoading || isPositioningScroll}
+                                embedded={embedded}
                             />
                         </motion.div>
                     </motion.div>

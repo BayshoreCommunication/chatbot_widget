@@ -8,21 +8,31 @@ To add the chatbot to your website, simply add the following script tag to your 
 
 ```html
 <script 
-  src="https://your-domain.com/chatbot-widget.min.js" 
+  src="https://aibotwizard.vercel.app/chatbot-widget.min.js" 
   data-api-key="YOUR_API_KEY">
 </script>
 ```
 
-Replace `YOUR_API_KEY` with your organization's API key, and `https://your-domain.com` with the URL where the widget script is hosted.
+Replace `YOUR_API_KEY` with your organization's API key.
 
 ## Configuration
 
-The widget only requires two parameters:
+The widget supports the following parameters:
 
-| Parameter | Description |
-|-----------|-------------|
-| `src` | The URL where the widget script is hosted |
-| `data-api-key` | Your organization's API key |
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| `data-api-key` | Your organization's API key | Yes |
+| `data-position` | Widget position: `bottom-right` (default), `bottom-left`, `top-right`, or `top-left` | No |
+
+Example with custom position:
+
+```html
+<script 
+  src="https://aibotwizard.vercel.app/chatbot-widget.min.js" 
+  data-api-key="YOUR_API_KEY"
+  data-position="bottom-left">
+</script>
+```
 
 ## URL Parameter Alternative
 
@@ -37,10 +47,19 @@ This is useful in situations where you can't modify the HTML directly.
 ## How It Works
 
 The widget script:
-1. Creates a chat button on your website
-2. Opens a chat interface when clicked
-3. Communicates with our AI service using your API key
-4. Integrates seamlessly with your website design
+1. Creates a chat button on your website with a pulsing animation
+2. When clicked, the button disappears and chat interface opens
+3. When the chat is closed, the button reappears
+4. Communicates with our AI service using your API key
+5. Integrates seamlessly with your website design
+
+## Widget Appearance
+
+The chatbot widget features:
+- A modern indigo-colored chat button
+- Smooth animations during opening and closing
+- A responsive design that works well on mobile and desktop
+- Clean, unobtrusive styling that fits most website designs
 
 ## Troubleshooting
 
