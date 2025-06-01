@@ -1,11 +1,37 @@
 import { useEffect, useState, useCallback } from 'react';
 import ChatBot from '../components/chatbot/ChatBot';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { ChatbotSettings } from '../components/chatbot/types';
 
 const ChatbotEmbedPage = () => {
     const [apiKey, setApiKey] = useState<string | undefined>(undefined);
     const [isWidget, setIsWidget] = useState<boolean>(false);
     const [isLoaded, setIsLoaded] = useState<boolean>(false);
+    const [settings, setSettings] = useState<ChatbotSettings | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch chatbot settings
+    const fetchSettings = useCallback(async (apiKey: string) => {
+        try {
+            const response = await fetch('http://localhost:8000/api/chatbot/settings', {
+                method: 'GET',
+                headers: {
+                    'X-API-Key': apiKey,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.status === 'success') {
+                setSettings(data.settings);
+            } else {
+                setError('Failed to load chatbot settings');
+            }
+        } catch (error) {
+            console.error('Error fetching settings:', error);
+            setError('Failed to load chatbot settings');
+        }
+    }, []);
 
     // Callback function for close button click
     const handleToggleChat = useCallback(() => {
@@ -23,6 +49,7 @@ const ChatbotEmbedPage = () => {
 
         if (apiKeyParam) {
             setApiKey(apiKeyParam);
+            fetchSettings(apiKeyParam);
         }
 
         if (isWidgetParam === 'true') {
@@ -33,7 +60,7 @@ const ChatbotEmbedPage = () => {
         setTimeout(() => {
             setIsLoaded(true);
         }, 100);
-    }, []);
+    }, [fetchSettings]);
 
     return (
         <div className="h-screen overflow-hidden">
@@ -57,6 +84,7 @@ const ChatbotEmbedPage = () => {
                             embedded={true}
                             initiallyOpen={true}
                             onToggleChat={handleToggleChat}
+                            settings={settings}
                         />
                     </motion.div>
                 ) : (
@@ -68,7 +96,7 @@ const ChatbotEmbedPage = () => {
                     >
                         <div className="bg-red-100 p-5 rounded-lg text-red-800 max-w-[80%] text-center">
                             <h3 className="font-medium text-lg mb-2">Error</h3>
-                            <p>No API key provided. Please make sure the iframe URL includes the apiKey parameter.</p>
+                            <p>{error || 'No API key provided. Please make sure the iframe URL includes the apiKey parameter.'}</p>
                         </div>
                     </motion.div>
                 )}

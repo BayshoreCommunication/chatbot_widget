@@ -56,7 +56,7 @@ Output files:
 To embed the chatbot on your website, add the following script tag:
 
 <script 
-  src="${process.env.PUBLIC_URL || 'https://aibotwizard.vercel.app'}/chatbot-widget.min.js" 
+  src="${process.env.PUBLIC_URL || 'http://localhost:5173'}/chatbot-widget.min.js" 
   data-api-key="YOUR_API_KEY">
 </script>
 `); 

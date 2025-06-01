@@ -3,7 +3,6 @@ import ChatHeader from './ChatHeader';
 import ChatBody from './ChatBody';
 import ChatInput from './ChatInput';
 import type { Message, BotMode, AppointmentSlot } from './types';
-import chatApi, { ChatApi } from './api';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -13,14 +12,39 @@ interface ChatBotProps {
     embedded?: boolean;
     initiallyOpen?: boolean;
     onToggleChat?: () => void;
+    settings?: ChatbotSettings | null;
+}
+
+interface ChatbotSettings {
+    name: string;
+    selectedColor: 'black' | 'red' | 'orange' | 'blue' | 'pink';
+    leadCapture: boolean;
+    avatarUrl: string;
+}
+
+interface ConversationMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+interface ChatResponse {
+    answer: string;
+    mode: string;
+    language: string;
+    user_data: {
+        conversation_history: ConversationMessage[];
+        name: string;
+        email: string;
+    };
 }
 
 const ChatBot: React.FC<ChatBotProps> = ({
     apiKey,
-    customApiUrl,
+    customApiUrl = 'http://localhost:8000/api/chatbot/ask',
     embedded = false,
     initiallyOpen = false,
-    onToggleChat
+    onToggleChat,
+    settings
 }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isOpen, setIsOpen] = useState(initiallyOpen || false);
@@ -42,46 +66,165 @@ const ChatBot: React.FC<ChatBotProps> = ({
         'Let me assist you today. Click to open.'
     ];
 
-    // Use provided API key or create custom API instance if needed
-    const [api, setApi] = useState(chatApi);
+    const chatBodyRef = useRef<HTMLDivElement>(null);
+    const [forceScrollBottom, setForceScrollBottom] = useState(0);
 
-    // Set up custom API instance if apiKey is provided
-    useEffect(() => {
-        if (apiKey) {
-            const config = {
-                apiKey,
-                ...(customApiUrl ? { apiUrl: customApiUrl } : {})
-            };
-            setApi(new ChatApi(config));
+    // Add function to force scroll to bottom
+    const forceScrollToBottom = () => {
+        setForceScrollBottom(prev => prev + 1);
+        const scrollContainer = chatBodyRef.current?.querySelector('.overflow-y-auto');
+        if (scrollContainer) {
+            setTimeout(() => {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }, 100);
         }
-    }, [apiKey, customApiUrl]);
+    };
+
+    // API Functions
+    const getConversationHistory = async (sessionId: string): Promise<ChatResponse> => {
+        try {
+            const response = await fetch(`http://localhost:8000/api/chatbot/history/${sessionId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey || ''
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching conversation history:', error);
+            throw error;
+        }
+    };
+
+    const sendMessageToApi = async (message: string, sessionId: string): Promise<ChatResponse> => {
+        try {
+            const response = await fetch(customApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey || ''
+                },
+                body: JSON.stringify({
+                    question: message,
+                    session_id: sessionId
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error calling chatbot API:', error);
+            throw error;
+        }
+    };
+
+    const confirmAppointmentSlot = async (request: {
+        slotId: string;
+        sessionId: string;
+        day: string;
+        time: string;
+    }): Promise<ChatResponse> => {
+        try {
+            const message = `I want to confirm my appointment for ${request.day} at ${request.time} (ID: ${request.slotId})`;
+
+            const response = await fetch(customApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey || ''
+                },
+                body: JSON.stringify({
+                    question: message,
+                    session_id: request.sessionId,
+                    slot_confirmation: {
+                        slot_id: request.slotId,
+                        day: request.day,
+                        time: request.time
+                    }
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error confirming appointment slot:', error);
+            throw error;
+        }
+    };
+
+    const convertToMessages = (conversationHistory: ConversationMessage[]): Message[] => {
+        return conversationHistory.map((item, index) => ({
+            id: index.toString(),
+            text: item.content,
+            sender: item.role === 'user' ? 'user' : 'bot',
+            timestamp: new Date(),
+        }));
+    };
+
+    const parseAppointmentSlots = (text: string): AppointmentSlot[] | undefined => {
+        if (!text.includes('Available appointment slots')) {
+            return undefined;
+        }
+
+        const slots: AppointmentSlot[] = [];
+        const lines = text.split('\n');
+        let currentDate = '';
+        let currentDay = '';
+
+        for (const line of lines) {
+            if (line.includes('📅')) {
+                const dateMatch = line.match(/📅\s+(.*?)(?:,\s+(\d{4}))?$/);
+                if (dateMatch) {
+                    currentDay = dateMatch[1];
+                    currentDate = currentDay;
+                }
+            } else if (line.trim().startsWith('•') || line.trim().startsWith('*')) {
+                const timeMatch = line.match(/([0-9]+:[0-9]+\s+[AP]M)/i);
+                const idMatch = line.match(/ID:\s+(slot_[\w-]+)/);
+
+                if (timeMatch && idMatch) {
+                    slots.push({
+                        id: idMatch[1],
+                        day: currentDay,
+                        date: currentDate,
+                        time: timeMatch[1],
+                        available: true
+                    });
+                }
+            }
+        }
+
+        return slots.length > 0 ? slots : undefined;
+    };
 
     const [sessionId] = useState<string>(() => {
-        // Try to get existing session from localStorage, or create a new one
         const savedSession = localStorage.getItem('chatSessionId');
         return savedSession || uuidv4();
     });
 
-    // Save sessionId to localStorage when it changes
     useEffect(() => {
         localStorage.setItem('chatSessionId', sessionId);
     }, [sessionId]);
 
-    const [forceScrollBottom, setForceScrollBottom] = useState(0); // Counter to force scroll
-    const chatBodyRef = useRef<HTMLDivElement>(null);
-
-    // Initialize chat and fetch conversation history when component mounts or chat is opened
+    // Initialize chat and fetch conversation history
     useEffect(() => {
-        // Don't do anything if chat isn't open
-        if (!isOpen) {
-            return;
-        }
+        if (!isOpen || historyFetched) return;
 
         const fetchConversationHistory = async () => {
             const savedSession = localStorage.getItem('chatSessionId');
-            // Only proceed if there's a session ID
             if (!savedSession) {
-                // Send initial hello only if no session exists
                 setIsTyping(true);
                 setTimeout(() => sendMessage("hello"), 100);
                 return;
@@ -89,71 +232,48 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
             setIsLoading(true);
             try {
-                console.log("Fetching history with session ID:", savedSession);
-                // Use the api instance which might be using the custom API key
-                const response = await api.getConversationHistory(savedSession);
+                const response = await getConversationHistory(savedSession);
 
                 if (response.user_data && response.user_data.conversation_history) {
-                    const historyMessages = api.convertToMessages(response.user_data.conversation_history);
+                    const historyMessages = convertToMessages(response.user_data.conversation_history);
                     if (historyMessages.length > 0) {
-                        console.log("Setting messages from history:", historyMessages.length);
-
-                        // Set positioning flag to keep loading state active
                         setIsPositioningScroll(true);
-
-                        // Set a batch loading flag to handle scroll behavior in ChatBody
                         setBatchedMessages(true);
 
-                        // Add a small delay before setting messages to allow the component to finish mounting
                         setTimeout(() => {
                             setMessages(historyMessages);
-
-                            // Update the mode if it's in the response
                             if (response.mode) {
                                 setCurrentMode(response.mode as BotMode);
                             }
-
-                            // Force scroll to bottom after messages are set
                             setTimeout(() => {
                                 forceScrollToBottom();
-
-                                // After a small delay to make sure scroll position is set
                                 setTimeout(() => {
-                                    // Finally hide loading state
                                     setIsLoading(false);
                                     setIsPositioningScroll(false);
                                 }, 300);
                             }, 300);
                         }, 300);
                     } else {
-                        // No messages in history, send initial hello
                         setIsLoading(false);
                         setIsTyping(true);
                         setTimeout(() => sendMessage("hello"), 100);
                     }
                 } else {
-                    // No user data or conversation history, send initial hello
                     setIsLoading(false);
                     setIsTyping(true);
                     setTimeout(() => sendMessage("hello"), 100);
                 }
             } catch (error) {
                 console.error('Error fetching conversation history:', error);
-                // If error occurs, still send initial hello
                 setIsLoading(false);
                 setIsTyping(true);
                 setTimeout(() => sendMessage("hello"), 100);
             } finally {
-                // Don't set isLoading false here, we'll handle it after positioning
                 setHistoryFetched(true);
             }
         };
 
-        // Fetch history when chat is opened and not already fetched
-        if (!historyFetched) {
-            fetchConversationHistory();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        fetchConversationHistory();
     }, [isOpen, historyFetched]);
 
     // Reset batchedMessages after it's been applied
@@ -249,7 +369,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
     };
 
     const sendMessage = async (text: string) => {
-        // Create and add user message
         const newUserMessage: Message = {
             id: Date.now().toString(),
             text,
@@ -258,31 +377,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
         };
 
         setMessages(prev => [...prev, newUserMessage]);
-        setBatchedMessages(false); // Reset batch flag when sending a new message
-
-        // Show typing indicator
+        setBatchedMessages(false);
         setIsTyping(true);
 
         try {
-            // Call the API
-            const response = await api.sendMessage({
-                message: text,
-                sessionId
-            });
+            const response = await sendMessageToApi(text, sessionId);
 
-            // Update conversation mode if provided
             if (response.mode) {
                 setCurrentMode(response.mode as BotMode);
             }
 
-            // Update user data
             if (response.user_data) {
-                // If this is the first response and we have history, update the messages
                 if (messages.length <= 1) {
-                    const historyMessages = api.convertToMessages(response.user_data.conversation_history);
+                    const historyMessages = convertToMessages(response.user_data.conversation_history);
                     setMessages(historyMessages);
                 } else {
-                    // Create bot response message
                     const botMessage: Message = {
                         id: (Date.now() + 1).toString(),
                         text: response.answer,
@@ -290,18 +399,15 @@ const ChatBot: React.FC<ChatBotProps> = ({
                         timestamp: new Date(),
                     };
 
-                    // Check if the message contains appointment slots
-                    const appointmentSlots = api.parseAppointmentSlots(response.answer);
+                    const appointmentSlots = parseAppointmentSlots(response.answer);
                     if (appointmentSlots) {
                         botMessage.appointmentSlots = appointmentSlots;
                     }
 
-                    // Add bot message to the chat
                     setMessages(prev => [...prev, botMessage]);
                 }
             }
         } catch (error) {
-            // Handle error
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 text: 'Sorry, I encountered an error. Please try again.',
@@ -312,7 +418,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
             setMessages(prev => [...prev, errorMessage]);
             console.error('Error sending message:', error);
         } finally {
-            // Hide typing indicator
             setIsTyping(false);
         }
     };
@@ -336,7 +441,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
     };
 
     const handleSlotConfirm = async (slot: AppointmentSlot) => {
-        // Create a user message for the slot selection
         const slotSelectionMessage: Message = {
             id: Date.now().toString(),
             text: `I'd like to book: ${slot.day} at ${slot.time} (ID: ${slot.id})`,
@@ -348,15 +452,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
         setIsTyping(true);
 
         try {
-            // Call the API with slot confirmation
-            const response = await api.confirmAppointmentSlot({
+            const response = await confirmAppointmentSlot({
                 slotId: slot.id,
                 sessionId,
                 day: slot.day,
                 time: slot.time
             });
 
-            // Create bot confirmation message
             const confirmationMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 text: response.answer,
@@ -366,7 +468,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
             setMessages(prev => [...prev, confirmationMessage]);
         } catch (error) {
-            // Handle error
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 text: 'Sorry, I encountered an error confirming your appointment. Please try again.',
@@ -378,21 +479,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
             console.error('Error confirming appointment:', error);
         } finally {
             setIsTyping(false);
-        }
-    };
-
-    // Add function to force scroll to bottom
-    const forceScrollToBottom = () => {
-        setForceScrollBottom(prev => prev + 1); // Increment to trigger effect in child
-
-        // Directly access the scroll container as a fallback
-        if (chatBodyRef.current) {
-            const scrollContainer = chatBodyRef.current.querySelector('.overflow-y-auto');
-            if (scrollContainer) {
-                setTimeout(() => {
-                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                }, 100);
-            }
         }
     };
 
@@ -441,7 +527,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
             <AnimatePresence>
                 {(isOpen || embedded) && (
                     <motion.div
-                        className={`w-full ${embedded ? 'h-full' : 'h-[calc(100vh-2rem)] sm:h-[500px]'} sm:w-[350px] md:w-96 bg-gray-800 rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-700 text-gray-100 ${embedded ? 'fixed inset-0 m-0 p-0 rounded-none' : 'fixed bottom-0 right-0 sm:relative'}`}
+                        className={`flex flex-col ${embedded ? 'h-full w-full' : 'h-[calc(100vh-2rem)] sm:h-[500px] sm:w-[350px] md:w-96'} bg-gray-800 rounded-lg shadow-xl overflow-hidden  text-gray-100 ${embedded ? 'fixed inset-0 m-0 p-0 rounded-none' : 'fixed bottom-0 right-0 sm:relative'}`}
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -452,6 +538,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                             toggleChat={toggleChat}
                             currentMode={currentMode}
                             isLoading={isLoading || isPositioningScroll}
+                            settings={settings}
                         />
                         {isLoading || isPositioningScroll ? (
                             <motion.div

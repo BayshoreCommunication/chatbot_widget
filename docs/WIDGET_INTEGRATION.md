@@ -8,7 +8,7 @@ To add the chatbot to your website, simply add the following script tag to your 
 
 ```html
 <script 
-  src="https://aibotwizard.vercel.app/chatbot-widget.min.js" 
+  src="http://localhost:5173/chatbot-widget.min.js" 
   data-api-key="YOUR_API_KEY">
 </script>
 ```
@@ -28,7 +28,7 @@ Example with custom position:
 
 ```html
 <script 
-  src="https://aibotwizard.vercel.app/chatbot-widget.min.js" 
+  src="http://localhost:5173/chatbot-widget.min.js" 
   data-api-key="YOUR_API_KEY"
   data-position="bottom-left">
 </script>

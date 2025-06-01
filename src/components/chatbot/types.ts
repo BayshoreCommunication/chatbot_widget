@@ -35,4 +35,11 @@ export interface AppointmentSlot {
     date: string;
     time: string;
     available: boolean;
+}
+
+export interface ChatbotSettings {
+    name: string;
+    selectedColor: 'black' | 'red' | 'orange' | 'blue' | 'pink';
+    leadCapture: boolean;
+    avatarUrl: string;
 } 

@@ -2,49 +2,49 @@
 // This script allows organizations to embed the chatbot on their website
 
 (function () {
-    // Widget configuration
-    const widgetConfig = {
-        apiKey: '',
-        position: 'bottom-right', // default position
-    };
+  // Widget configuration
+  const widgetConfig = {
+    apiKey: '',
+    position: 'bottom-right', // default position
+  };
 
-    // Parse script attributes or URL parameters
-    function parseConfig() {
-        // Get the script tag that loaded this widget
-        const scripts = document.getElementsByTagName('script');
-        const currentScript = scripts[scripts.length - 1];
+  // Parse script attributes or URL parameters
+  function parseConfig() {
+    // Get the script tag that loaded this widget
+    const scripts = document.getElementsByTagName('script');
+    const currentScript = scripts[scripts.length - 1];
 
-        // Extract API key from data attribute
-        if (currentScript.getAttribute('data-api-key')) {
-            widgetConfig.apiKey = currentScript.getAttribute('data-api-key') || '';
-        }
-
-        // Extract position if specified
-        if (currentScript.getAttribute('data-position')) {
-            widgetConfig.position = currentScript.getAttribute('data-position') || 'bottom-right';
-        }
-
-        // If no API key found in script tag, try URL query parameters
-        if (!widgetConfig.apiKey) {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('chatbot-api-key')) {
-                widgetConfig.apiKey = urlParams.get('chatbot-api-key') || '';
-            }
-        }
-
-        // Validate that we have an API key
-        if (!widgetConfig.apiKey) {
-            console.error('Chatbot widget error: No API key provided. Add data-api-key attribute to script tag.');
-            return false;
-        }
-
-        return true;
+    // Extract API key from data attribute
+    if (currentScript.getAttribute('data-api-key')) {
+      widgetConfig.apiKey = currentScript.getAttribute('data-api-key') || '';
     }
 
-    // Load CSS styles for the widget
-    function loadStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
+    // Extract position if specified
+    if (currentScript.getAttribute('data-position')) {
+      widgetConfig.position = currentScript.getAttribute('data-position') || 'bottom-right';
+    }
+
+    // If no API key found in script tag, try URL query parameters
+    if (!widgetConfig.apiKey) {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('chatbot-api-key')) {
+        widgetConfig.apiKey = urlParams.get('chatbot-api-key') || '';
+      }
+    }
+
+    // Validate that we have an API key
+    if (!widgetConfig.apiKey) {
+      console.error('Chatbot widget error: No API key provided. Add data-api-key attribute to script tag.');
+      return false;
+    }
+
+    return true;
+  }
+
+  // Load CSS styles for the widget
+  function loadStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
       .chatbot-widget-container {
         position: fixed;
         z-index: 9999;
@@ -209,6 +209,7 @@
       
       .animate-pulse-indigo {
         animation: pulse-indigo 2s infinite;
+        padding: 3px;
       }
 
       @keyframes typing-dots {
@@ -243,144 +244,148 @@
         animation: typing-dots 1.4s infinite 0.6s;
       }
     `;
-        document.head.appendChild(style);
-    }
+    document.head.appendChild(style);
+  }
 
-    // Create and inject the widget components
-    function createWidget() {
-        // Create the toggle button (chat icon)
-        const toggleButton = document.createElement('button');
-        toggleButton.className = `chatbot-toggle-button ${widgetConfig.position}`;
-        toggleButton.innerHTML = `      <div style="padding: 12px;">        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />        </svg>      </div>    `;
+  // Create and inject the widget components
+  function createWidget() {
+    // Create the toggle button (chat icon)
+    const toggleButton = document.createElement('button');
+    toggleButton.className = `chatbot-toggle-button ${widgetConfig.position}`;
+    toggleButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+      </svg>
+    `;
 
-        // Create the widget container (initially hidden)
-        const widgetContainer = document.createElement('div');
-        widgetContainer.className = `chatbot-widget-container ${widgetConfig.position} hidden`;
+    // Create the widget container (initially hidden)
+    const widgetContainer = document.createElement('div');
+    widgetContainer.className = `chatbot-widget-container ${widgetConfig.position} hidden`;
 
-        // Create the tooltip
-        const tooltip = document.createElement('div');
-        tooltip.className = `chatbot-tooltip ${widgetConfig.position}`;
-        tooltip.innerHTML = `
+    // Create the tooltip
+    const tooltip = document.createElement('div');
+    tooltip.className = `chatbot-tooltip ${widgetConfig.position}`;
+    tooltip.innerHTML = `
       Need help? <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
     `;
 
-        // Create the iframe that will load the chatbot
-        const iframe = document.createElement('iframe');
-        iframe.className = 'chatbot-iframe';
+    // Create the iframe that will load the chatbot
+    const iframe = document.createElement('iframe');
+    iframe.className = 'chatbot-iframe';
 
-        // Set the iframe source to load the chatbot with the apiKey parameter
-        const chatbotUrl = new URL('https://aibotwizard.vercel.app/chatbot-embed');
-        chatbotUrl.searchParams.append('apiKey', widgetConfig.apiKey);
-        // Add a parameter to identify it's coming from widget for iframe communication
-        chatbotUrl.searchParams.append('isWidget', 'true');
+    // Set the iframe source to load the chatbot with the apiKey parameter
+    const chatbotUrl = new URL('http://localhost:5173/chatbot-embed');
+    chatbotUrl.searchParams.append('apiKey', widgetConfig.apiKey);
+    // Add a parameter to identify it's coming from widget for iframe communication
+    chatbotUrl.searchParams.append('isWidget', 'true');
 
-        iframe.src = chatbotUrl.toString();
+    iframe.src = chatbotUrl.toString();
 
-        // Append iframe to widget container
-        widgetContainer.appendChild(iframe);
+    // Append iframe to widget container
+    widgetContainer.appendChild(iframe);
 
-        // Add the elements to the DOM
-        document.body.appendChild(toggleButton);
-        document.body.appendChild(widgetContainer);
-        document.body.appendChild(tooltip);
+    // Add the elements to the DOM
+    document.body.appendChild(toggleButton);
+    document.body.appendChild(widgetContainer);
+    document.body.appendChild(tooltip);
 
-        // Add a pulse animation to the button
-        toggleButton.classList.add('animate-pulse-indigo');
+    // Add a pulse animation to the button
+    toggleButton.classList.add('animate-pulse-indigo');
 
-        // Show tooltip after a delay
+    // Show tooltip after a delay
+    setTimeout(() => {
+      tooltip.classList.add('visible');
+
+      // Hide tooltip after 5 seconds
+      setTimeout(() => {
+        tooltip.classList.remove('visible');
+      }, 5000);
+    }, 2000);
+
+    // Function to close the chat widget with animation
+    function closeWidget() {
+      // First start the animation
+      widgetContainer.classList.remove('visible');
+      widgetContainer.classList.add('hidden');
+
+      // Show the button with animation
+      toggleButton.style.display = 'flex';
+      setTimeout(() => {
+        toggleButton.classList.remove('hidden');
+
+        // Add pulse effect after the button appears
         setTimeout(() => {
-            tooltip.classList.add('visible');
+          if (!isOpen) {
+            toggleButton.classList.add('animate-pulse-indigo');
+          }
+        }, 500);
+      }, 100);
 
-            // Hide tooltip after 5 seconds
-            setTimeout(() => {
-                tooltip.classList.remove('visible');
-            }, 5000);
-        }, 2000);
-
-        // Function to close the chat widget with animation
-        function closeWidget() {
-            // First start the animation
-            widgetContainer.classList.remove('visible');
-            widgetContainer.classList.add('hidden');
-
-            // Show the button with animation
-            toggleButton.style.display = 'flex';
-            setTimeout(() => {
-                toggleButton.classList.remove('hidden');
-
-                // Add pulse effect after the button appears
-                setTimeout(() => {
-                    if (!isOpen) {
-                        toggleButton.classList.add('animate-pulse-indigo');
-                    }
-                }, 500);
-            }, 100);
-
-            isOpen = false;
-        }
-
-        // Function to open the chat widget with animation
-        function openWidget() {
-            // Hide button first
-            toggleButton.classList.add('hidden');
-            toggleButton.classList.remove('animate-pulse-indigo');
-
-            // Show widget with animation
-            widgetContainer.classList.remove('hidden');
-
-            // Trigger reflow for animation
-            void widgetContainer.offsetWidth;
-
-            // Add visible class to start animation
-            widgetContainer.classList.add('visible');
-
-            // Hide button element after animation
-            setTimeout(() => {
-                if (isOpen) {
-                    toggleButton.style.display = 'none';
-                }
-            }, 300);
-
-            isOpen = true;
-        }
-
-        // Listen for messages from the iframe
-        window.addEventListener('message', (event) => {
-            // Verify origin for security
-            if (event.origin !== 'https://aibotwizard.vercel.app') {
-                return;
-            }
-
-            // Handle close command from iframe
-            if (event.data === 'closeChatbot') {
-                closeWidget();
-            }
-        });
-
-        // Toggle widget visibility when button is clicked
-        let isOpen = false;
-        toggleButton.addEventListener('click', () => {
-            if (isOpen) {
-                closeWidget();
-            } else {
-                openWidget();
-            }
-        });
+      isOpen = false;
     }
 
-    // Initialize the widget
-    function init() {
-        if (parseConfig()) {
-            loadStyles();
-            createWidget();
-            console.log('Chatbot widget initialized with API key:', widgetConfig.apiKey);
+    // Function to open the chat widget with animation
+    function openWidget() {
+      // Hide button first
+      toggleButton.classList.add('hidden');
+      toggleButton.classList.remove('animate-pulse-indigo');
+
+      // Show widget with animation
+      widgetContainer.classList.remove('hidden');
+
+      // Trigger reflow for animation
+      void widgetContainer.offsetWidth;
+
+      // Add visible class to start animation
+      widgetContainer.classList.add('visible');
+
+      // Hide button element after animation
+      setTimeout(() => {
+        if (isOpen) {
+          toggleButton.style.display = 'none';
         }
+      }, 300);
+
+      isOpen = true;
     }
 
-    // Initialize when DOM is fully loaded
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+    // Listen for messages from the iframe
+    window.addEventListener('message', (event) => {
+      // Verify origin for security
+      if (event.origin !== 'http://localhost:5173') {
+        return;
+      }
+
+      // Handle close command from iframe
+      if (event.data === 'closeChatbot') {
+        closeWidget();
+      }
+    });
+
+    // Toggle widget visibility when button is clicked
+    let isOpen = false;
+    toggleButton.addEventListener('click', () => {
+      if (isOpen) {
+        closeWidget();
+      } else {
+        openWidget();
+      }
+    });
+  }
+
+  // Initialize the widget
+  function init() {
+    if (parseConfig()) {
+      loadStyles();
+      createWidget();
+      console.log('Chatbot widget initialized with API key:', widgetConfig.apiKey);
     }
+  }
+
+  // Initialize when DOM is fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })(); 

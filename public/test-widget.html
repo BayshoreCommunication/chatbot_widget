@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget Test</title>
+</head>
+
+<body>
+    <h1>Chat Widget Local Test</h1>
+    <p>The chat widget should appear in the bottom-right corner.</p>
+    <div id="debug"></div>
+
+    <!-- Local Widget Script -->
+    <script>
+        // Add some debugging
+        window.addEventListener('error', function (e) {
+            document.getElementById('debug').innerHTML += '<p>Error: ' + e.message + '</p>';
+        });
+    </script>
+    <script src="/widget/widget.js" data-api-key="org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea" async></script>
+</body>
+
+</html>

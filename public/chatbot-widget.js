@@ -194,6 +194,7 @@
       
       .animate-pulse-indigo {
         animation: pulse-indigo 2s infinite;
+        padding: 3px;
       }
 
       @keyframes typing-dots {
@@ -233,7 +234,11 @@
     function createWidget() {
       const toggleButton = document.createElement("button");
       toggleButton.className = `chatbot-toggle-button ${widgetConfig.position}`;
-      toggleButton.innerHTML = `      <div style="padding: 12px;">        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />        </svg>      </div>    `;
+      toggleButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+      </svg>
+    `;
       const widgetContainer = document.createElement("div");
       widgetContainer.className = `chatbot-widget-container ${widgetConfig.position} hidden`;
       const tooltip = document.createElement("div");
@@ -243,7 +248,7 @@
     `;
       const iframe = document.createElement("iframe");
       iframe.className = "chatbot-iframe";
-      const chatbotUrl = new URL("https://aibotwizard.vercel.app/chatbot-embed");
+      const chatbotUrl = new URL("http://localhost:5173/chatbot-embed");
       chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
       chatbotUrl.searchParams.append("isWidget", "true");
       iframe.src = chatbotUrl.toString();
@@ -286,7 +291,7 @@
         isOpen = true;
       }
       window.addEventListener("message", (event) => {
-        if (event.origin !== "https://aibotwizard.vercel.app") {
+        if (event.origin !== "http://localhost:5173") {
           return;
         }
         if (event.data === "closeChatbot") {
