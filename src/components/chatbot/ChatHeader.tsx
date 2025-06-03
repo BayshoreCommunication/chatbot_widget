@@ -47,7 +47,7 @@ const ChatHeader: FC<ChatHeaderProps> = ({ toggleChat, settings }) => {
                     )}
                     <div>
                         <h2 className="font-medium text-lg text-white">
-                            {settings?.name || 'Chat Assistant'}
+                            {settings?.name || 'Chatbot'}
                         </h2>
                     </div>
                 </div>

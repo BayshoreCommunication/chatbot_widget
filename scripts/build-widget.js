@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Paths
-const srcPath = path.join(__dirname, '../src/widget/widget.ts');
+const srcPath = path.join(__dirname, '../public/widget/widget.js');
 const distPath = path.join(__dirname, '../public');
 const outPath = path.join(distPath, 'chatbot-widget.js');
 const minOutPath = path.join(distPath, 'chatbot-widget.min.js');
@@ -56,7 +56,7 @@ Output files:
 To embed the chatbot on your website, add the following script tag:
 
 <script 
-  src="${process.env.PUBLIC_URL || 'http://localhost:5173'}/chatbot-widget.min.js" 
+  src="${process.env.PUBLIC_URL || 'https://aibotwizard.vercel.app'}/chatbot-widget.min.js" 
   data-api-key="YOUR_API_KEY">
 </script>
 `); 

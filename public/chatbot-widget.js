@@ -1,10 +1,39 @@
 (() => {
-  // src/widget/widget.ts
+  // public/widget/widget.js
   (function() {
     const widgetConfig = {
       apiKey: "",
-      position: "bottom-right"
+      position: "bottom-right",
       // default position
+      settings: null
+      // will store chatbot settings
+    };
+    const colorMap = {
+      black: {
+        primary: "#000000",
+        hover: "#1a1a1a",
+        shadow: "rgba(0, 0, 0, 0.4)"
+      },
+      red: {
+        primary: "#ef4444",
+        hover: "#dc2626",
+        shadow: "rgba(239, 68, 68, 0.4)"
+      },
+      orange: {
+        primary: "#f97316",
+        hover: "#ea580c",
+        shadow: "rgba(249, 115, 22, 0.4)"
+      },
+      blue: {
+        primary: "#3b82f6",
+        hover: "#2563eb",
+        shadow: "rgba(59, 130, 246, 0.4)"
+      },
+      pink: {
+        primary: "#ec4899",
+        hover: "#db2777",
+        shadow: "rgba(236, 72, 153, 0.4)"
+      }
     };
     function parseConfig() {
       const scripts = document.getElementsByTagName("script");
@@ -27,8 +56,30 @@
       }
       return true;
     }
+    async function fetchSettings() {
+      try {
+        const response = await fetch("https://botapi.bayshorecommunication.org/api/chatbot/settings", {
+          method: "GET",
+          headers: {
+            "X-API-Key": widgetConfig.apiKey,
+            "Content-Type": "application/json"
+          }
+        });
+        const data = await response.json();
+        if (data.status === "success") {
+          widgetConfig.settings = data.settings;
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Failed to fetch chatbot settings:", error);
+        return false;
+      }
+    }
     function loadStyles() {
+      var _a;
       const style = document.createElement("style");
+      const colors = ((_a = widgetConfig.settings) == null ? void 0 : _a.selectedColor) ? colorMap[widgetConfig.settings.selectedColor] : colorMap.blue;
       style.textContent = `
       .chatbot-widget-container {
         position: fixed;
@@ -79,7 +130,7 @@
         border-radius: 50%;
         width: 56px;
         height: 56px;
-        background-color: #4f46e5;
+        background-color: ${colors.primary};
         color: white;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         cursor: pointer;
@@ -95,7 +146,7 @@
       }
       .chatbot-toggle-button:hover {
         transform: scale(1.1);
-        background-color: #4338ca;
+        background-color: ${colors.hover};
       }
       .chatbot-toggle-button.bottom-right {
         bottom: 20px;
@@ -128,7 +179,7 @@
       /* Tooltip styles */
       .chatbot-tooltip {
         position: absolute;
-        background-color: #4f46e5;
+        background-color: ${colors.primary};
         color: white;
         padding: 8px 12px;
         border-radius: 8px;
@@ -169,31 +220,31 @@
       }
       .chatbot-tooltip.bottom-right:after {
         border-width: 8px 8px 0 0;
-        border-color: #4f46e5 transparent transparent transparent;
+        border-color: ${colors.primary} transparent transparent transparent;
         bottom: -8px;
         right: 20px;
       }
       .chatbot-tooltip.bottom-left:after {
         border-width: 8px 0 0 8px;
-        border-color: #4f46e5 transparent transparent transparent;
+        border-color: ${colors.primary} transparent transparent transparent;
         bottom: -8px;
         left: 20px;
       }
       
-      @keyframes pulse-indigo {
+      @keyframes pulse-theme {
         0% {
-          box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+          box-shadow: 0 0 0 0 ${colors.shadow};
         }
         70% {
-          box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+          box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
         }
         100% {
-          box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+          box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
         }
       }
       
-      .animate-pulse-indigo {
-        animation: pulse-indigo 2s infinite;
+      .animate-pulse-theme {
+        animation: pulse-theme 2s infinite;
         padding: 3px;
       }
 
@@ -228,35 +279,64 @@
       .typing-dot:nth-child(3) {
         animation: typing-dots 1.4s infinite 0.6s;
       }
+
+      /* New styles for the chat icon */
+      .chatbot-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .chatbot-icon {
+        width: 24px;
+        height: 24px;
+      }
+      @media (min-width: 640px) {
+        .chatbot-icon {
+          width: 32px;
+          height: 32px;
+        }
+      }
     `;
       document.head.appendChild(style);
     }
     function createWidget() {
+      var _a, _b, _c, _d;
       const toggleButton = document.createElement("button");
       toggleButton.className = `chatbot-toggle-button ${widgetConfig.position}`;
-      toggleButton.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-      </svg>
-    `;
+      if ((_a = widgetConfig.settings) == null ? void 0 : _a.avatarUrl) {
+        toggleButton.innerHTML = `
+                <img src="${widgetConfig.settings.avatarUrl}" alt="${((_b = widgetConfig.settings) == null ? void 0 : _b.name) || "Chat"}" class="chatbot-avatar">
+            `;
+      } else {
+        toggleButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="chatbot-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+            `;
+      }
       const widgetContainer = document.createElement("div");
       widgetContainer.className = `chatbot-widget-container ${widgetConfig.position} hidden`;
       const tooltip = document.createElement("div");
       tooltip.className = `chatbot-tooltip ${widgetConfig.position}`;
       tooltip.innerHTML = `
-      Need help? <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
-    `;
+            ${((_c = widgetConfig.settings) == null ? void 0 : _c.name) || "Need help?"} <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+        `;
       const iframe = document.createElement("iframe");
       iframe.className = "chatbot-iframe";
-      const chatbotUrl = new URL("http://localhost:5173/chatbot-embed");
+      const chatbotUrl = new URL("https://aibotwizard.vercel.app/chatbot-embed");
       chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
       chatbotUrl.searchParams.append("isWidget", "true");
+      if ((_d = widgetConfig.settings) == null ? void 0 : _d.leadCapture) {
+        chatbotUrl.searchParams.append("leadCapture", "true");
+      }
       iframe.src = chatbotUrl.toString();
       widgetContainer.appendChild(iframe);
       document.body.appendChild(toggleButton);
       document.body.appendChild(widgetContainer);
       document.body.appendChild(tooltip);
-      toggleButton.classList.add("animate-pulse-indigo");
+      toggleButton.classList.add("animate-pulse-theme");
       setTimeout(() => {
         tooltip.classList.add("visible");
         setTimeout(() => {
@@ -271,7 +351,7 @@
           toggleButton.classList.remove("hidden");
           setTimeout(() => {
             if (!isOpen) {
-              toggleButton.classList.add("animate-pulse-indigo");
+              toggleButton.classList.add("animate-pulse-theme");
             }
           }, 500);
         }, 100);
@@ -279,7 +359,7 @@
       }
       function openWidget() {
         toggleButton.classList.add("hidden");
-        toggleButton.classList.remove("animate-pulse-indigo");
+        toggleButton.classList.remove("animate-pulse-theme");
         widgetContainer.classList.remove("hidden");
         void widgetContainer.offsetWidth;
         widgetContainer.classList.add("visible");
@@ -291,7 +371,7 @@
         isOpen = true;
       }
       window.addEventListener("message", (event) => {
-        if (event.origin !== "http://localhost:5173") {
+        if (event.origin !== "https://aibotwizard.vercel.app") {
           return;
         }
         if (event.data === "closeChatbot") {
@@ -307,8 +387,13 @@
         }
       });
     }
-    function init() {
+    async function init() {
       if (parseConfig()) {
+        if (widgetConfig.apiKey) {
+          await fetchSettings();
+        } else {
+          console.error("API key is required to fetch settings");
+        }
         loadStyles();
         createWidget();
         console.log("Chatbot widget initialized with API key:", widgetConfig.apiKey);

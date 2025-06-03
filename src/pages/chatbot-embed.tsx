@@ -13,7 +13,7 @@ const ChatbotEmbedPage = () => {
     // Fetch chatbot settings
     const fetchSettings = useCallback(async (apiKey: string) => {
         try {
-            const response = await fetch('http://localhost:8000/api/chatbot/settings', {
+            const response = await fetch('https://botapi.bayshorecommunication.org/api/chatbot/settings', {
                 method: 'GET',
                 headers: {
                     'X-API-Key': apiKey,

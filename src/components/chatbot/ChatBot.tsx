@@ -40,7 +40,7 @@ interface ChatResponse {
 
 const ChatBot: React.FC<ChatBotProps> = ({
     apiKey,
-    customApiUrl = 'http://localhost:8000/api/chatbot/ask',
+    customApiUrl = 'https://botapi.bayshorecommunication.org/api/chatbot/ask',
     embedded = false,
     initiallyOpen = false,
     onToggleChat,
@@ -83,7 +83,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     // API Functions
     const getConversationHistory = async (sessionId: string): Promise<ChatResponse> => {
         try {
-            const response = await fetch(`http://localhost:8000/api/chatbot/history/${sessionId}`, {
+            const response = await fetch(`https://botapi.bayshorecommunication.org/api/chatbot/history/${sessionId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -226,7 +226,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
             const savedSession = localStorage.getItem('chatSessionId');
             if (!savedSession) {
                 setIsTyping(true);
-                setTimeout(() => sendMessage("hello"), 100);
+                // Add initial welcome message
+                const welcomeMessage: Message = {
+                    id: Date.now().toString(),
+                    text: "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
+                        "• Scheduling appointments\n" +
+                        "• Answering questions about our services\n" +
+                        "• Providing information and support",
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+                setMessages([welcomeMessage]);
+                setIsTyping(false);
                 return;
             }
 
@@ -254,20 +265,50 @@ const ChatBot: React.FC<ChatBotProps> = ({
                             }, 300);
                         }, 300);
                     } else {
+                        // Add welcome message for empty history
+                        const welcomeMessage: Message = {
+                            id: Date.now().toString(),
+                            text: "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
+                                "• Scheduling appointments\n" +
+                                "• Answering questions about our services\n" +
+                                "• Providing information and support",
+                            sender: 'bot',
+                            timestamp: new Date(),
+                        };
+                        setMessages([welcomeMessage]);
                         setIsLoading(false);
-                        setIsTyping(true);
-                        setTimeout(() => sendMessage("hello"), 100);
+                        setIsTyping(false);
                     }
                 } else {
+                    // Add welcome message when no user data
+                    const welcomeMessage: Message = {
+                        id: Date.now().toString(),
+                        text: "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
+                            "• Scheduling appointments\n" +
+                            "• Answering questions about our services\n" +
+                            "• Providing information and support",
+                        sender: 'bot',
+                        timestamp: new Date(),
+                    };
+                    setMessages([welcomeMessage]);
                     setIsLoading(false);
-                    setIsTyping(true);
-                    setTimeout(() => sendMessage("hello"), 100);
+                    setIsTyping(false);
                 }
             } catch (error) {
                 console.error('Error fetching conversation history:', error);
+                // Add welcome message on error
+                const welcomeMessage: Message = {
+                    id: Date.now().toString(),
+                    text: "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
+                        "• Scheduling appointments\n" +
+                        "• Answering questions about our services\n" +
+                        "• Providing information and support",
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+                setMessages([welcomeMessage]);
                 setIsLoading(false);
-                setIsTyping(true);
-                setTimeout(() => sendMessage("hello"), 100);
+                setIsTyping(false);
             } finally {
                 setHistoryFetched(true);
             }

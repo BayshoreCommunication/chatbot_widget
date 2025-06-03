@@ -15,7 +15,7 @@
 // }
 
 // // Admin API configuration
-// const ADMIN_API_URL = 'http://localhost:8000/admin';
+// const ADMIN_API_URL = 'https://botapi.bayshorecommunication.org/admin';
 
 // export class OrganizationManager {
 //     private adminApiKey: string;
