@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget Embedded Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .embedded-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            position: relative;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        .controls button {
+            margin: 5px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4f46e5;
+            color: white;
+            cursor: pointer;
+        }
+
+        .debug {
+            background-color: #f8fafc;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #e2e8f0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .success {
+            color: #059669;
+        }
+
+        .error {
+            color: #dc2626;
+        }
+
+        .info {
+            color: #2563eb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="test-section">
+            <h2>Embedded Chat Widget Test</h2>
+            <p>Testing the embedded chat widget with instant replies.</p>
+
+            <div class="controls">
+                <button onclick="testWidgetLoaded()">Check Widget</button>
+                <button onclick="testAPIConnection()">Test API</button>
+                <button onclick="testInstantReplies()">Test Instant Replies</button>
+                <button onclick="clearDebug()">Clear Debug</button>
+            </div>
+
+            <div id="debug-log" class="debug">
+                <div class="info">[System] Test page loaded at: <span id="load-time"></span></div>
+            </div>
+
+            <div class="embedded-container">
+                <!-- Embedded widget will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set load time
+        document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
+
+        function log(message, type = 'info') {
+            const debugEl = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            debugEl.innerHTML = `<div class="${type}">[${timestamp}] ${message}</div>` + debugEl.innerHTML;
+            console.log(`[EMBEDDED TEST] ${message}`);
+        }
+
+        function clearDebug() {
+            const debugEl = document.getElementById('debug-log');
+            debugEl.innerHTML = '<div class="info">[System] Debug log cleared</div>';
+        }
+
+        function testWidgetLoaded() {
+            const container = document.querySelector('.embedded-container .chatbot-widget-container');
+            const iframe = document.querySelector('.embedded-container .chatbot-iframe');
+
+            if (container && iframe) {
+                log('✅ Widget and iframe found and properly embedded', 'success');
+            } else {
+                log('❌ Widget or iframe not found', 'error');
+            }
+        }
+
+        function testAPIConnection() {
+            const iframe = document.querySelector('.embedded-container .chatbot-iframe');
+            if (iframe) {
+                log('📡 Testing API connection...', 'info');
+                iframe.contentWindow.postMessage({ type: 'testConnection' }, '*');
+            } else {
+                log('❌ Iframe not found', 'error');
+            }
+        }
+
+        function testInstantReplies() {
+            const iframe = document.querySelector('.embedded-container .chatbot-iframe');
+            if (iframe) {
+                log('🔄 Testing instant replies...', 'info');
+                iframe.contentWindow.postMessage({ type: 'testInstantReplies' }, '*');
+            } else {
+                log('❌ Iframe not found', 'error');
+            }
+        }
+
+        // Listen for messages from iframe
+        window.addEventListener('message', function (event) {
+            if (event.data.type === 'connectionTest') {
+                log(`✅ API Connection successful: ${event.data.message}`, 'success');
+            } else if (event.data.type === 'instantReplies') {
+                log(`📝 Instant Replies: ${JSON.stringify(event.data.messages)}`, 'info');
+            }
+        });
+
+        // Initialize widget
+        window.addEventListener('load', function () {
+            log('🚀 Page loaded, initializing embedded widget...', 'info');
+        });
+    </script>
+
+    <!-- Embedded Widget -->
+    <script src="./chatbot-widget.js" data-api-key="org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea" data-embedded="true"
+        async></script>
+</body>
+
+</html>

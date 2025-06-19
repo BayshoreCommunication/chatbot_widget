@@ -4,22 +4,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Widget Test</title>
+    <title>Chat Widget Local Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .debug {
+            background-color: #ffe6e6;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .success {
+            background-color: #e6ffe6;
+        }
+
+        .error {
+            background-color: #ffe6e6;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        .controls button {
+            margin: 5px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4f46e5;
+            color: white;
+            cursor: pointer;
+        }
+
+        .controls button:hover {
+            background-color: #4338ca;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Chat Widget Local Test</h1>
-    <p>The chat widget should appear in the bottom-right corner.</p>
-    <div id="debug"></div>
+    <h1>🤖 Chat Widget Local Test</h1>
+    <p>Testing the embedded AI chatbot widget locally before deployment.</p>
 
-    <!-- Local Widget Script -->
+    <div class="test-section">
+        <h2>Widget Status</h2>
+        <div id="widget-status" class="debug">Initializing...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <div class="controls">
+            <button onclick="testWidgetLoaded()">Check Widget Loaded</button>
+            <button onclick="testAPIConnection()">Test API Connection</button>
+            <button onclick="showWidgetInfo()">Show Widget Info</button>
+            <button onclick="clearDebugLog()">Clear Debug Log</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Debug Log</h2>
+        <div id="debug-log" class="debug">
+            <div>🚀 Test page loaded at: <span id="load-time"></span></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Instructions</h2>
+        <ol>
+            <li>The chat widget should appear in the bottom-right corner</li>
+            <li>Click the blue chat button to open the widget</li>
+            <li>Test sending messages to ensure API connectivity</li>
+            <li>Check the debug log for any errors</li>
+            <li>Try closing and reopening the widget</li>
+        </ol>
+    </div>
+
     <script>
-        // Add some debugging
+        // Set load time
+        document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
+
+        // Debug logging function
+        function log(message, type = 'info') {
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.innerHTML = `[${timestamp}] ${message}`;
+            entry.className = type;
+            debugLog.appendChild(entry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+
+            // Also log to console
+            console.log(`[Widget Test] ${message}`);
+        }
+
+        // Error tracking
         window.addEventListener('error', function (e) {
-            document.getElementById('debug').innerHTML += '<p>Error: ' + e.message + '</p>';
+            log(`❌ Error: ${e.message} (${e.filename}:${e.lineno})`, 'error');
         });
+
+        // Widget status tracking
+        function updateWidgetStatus(status, type = 'info') {
+            const statusEl = document.getElementById('widget-status');
+            statusEl.textContent = status;
+            statusEl.className = `debug ${type}`;
+        }
+
+        // Test functions
+        function testWidgetLoaded() {
+            const toggleButton = document.querySelector('.chatbot-toggle-button');
+            const widgetContainer = document.querySelector('.chatbot-widget-container');
+
+            if (toggleButton && widgetContainer) {
+                log('✅ Widget elements found in DOM', 'success');
+                updateWidgetStatus('Widget loaded successfully', 'success');
+                return true;
+            } else {
+                log('❌ Widget elements not found', 'error');
+                updateWidgetStatus('Widget failed to load', 'error');
+                return false;
+            }
+        }
+
+        function testAPIConnection() {
+            const iframe = document.querySelector('.chatbot-iframe');
+            if (iframe) {
+                log('📡 Testing API connection through iframe...');
+                log(`🔗 Iframe source: ${iframe.src}`);
+
+                // Check if iframe loaded
+                iframe.onload = function () {
+                    log('✅ Iframe loaded successfully', 'success');
+                };
+
+                iframe.onerror = function () {
+                    log('❌ Iframe failed to load', 'error');
+                };
+            } else {
+                log('❌ No iframe found', 'error');
+            }
+        }
+
+        function showWidgetInfo() {
+            const script = document.querySelector('script[data-api-key]');
+            if (script) {
+                log(`🔑 API Key: ${script.getAttribute('data-api-key')}`);
+                log(`📍 Position: ${script.getAttribute('data-position') || 'bottom-right (default)'}`);
+            }
+
+            // Check widget elements
+            const elements = {
+                'Toggle Button': document.querySelector('.chatbot-toggle-button'),
+                'Widget Container': document.querySelector('.chatbot-widget-container'),
+                'Iframe': document.querySelector('.chatbot-iframe'),
+                'Tooltip': document.querySelector('.chatbot-tooltip')
+            };
+
+            Object.entries(elements).forEach(([name, element]) => {
+                if (element) {
+                    log(`✅ ${name}: Found`);
+                } else {
+                    log(`❌ ${name}: Not found`);
+                }
+            });
+        }
+
+        function clearDebugLog() {
+            const debugLog = document.getElementById('debug-log');
+            debugLog.innerHTML = '<div>🧹 Debug log cleared</div>';
+        }
+
+        // Listen for widget messages
+        window.addEventListener('message', function (event) {
+            log(`📨 Received message from iframe: ${JSON.stringify(event.data)}`);
+        });
+
+        // Track widget initialization
+        setTimeout(() => {
+            log('🔍 Checking widget initialization...');
+            if (testWidgetLoaded()) {
+                log('🎉 Widget test environment ready!', 'success');
+            }
+        }, 1000);
+
+        // Track script loading
+        log('📄 Test page script loaded');
     </script>
-    <script src="/widget/widget.js" data-api-key="org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea" async></script>
+
+    <!-- Production Widget Script (Minified) -->
+    <script src="./chatbot-widget.min.js" data-api-key="org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea"
+        data-position="bottom-right" async></script>
 </body>
 
 </html>

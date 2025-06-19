@@ -463,7 +463,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-300 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                     </svg>
-                                    <h4 className="font-medium text-green-200">Appointment Confirmed!</h4>
+                                    <h4 className="font-medium text-green-200">Appointment Selected!</h4>
                                 </motion.div>
                                 <motion.div
                                     className="p-2 bg-gray-800 rounded border border-green-700"

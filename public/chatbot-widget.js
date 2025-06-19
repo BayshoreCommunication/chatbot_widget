@@ -1,6 +1,6 @@
 (() => {
   // public/widget/widget.js
-  (function () {
+  (function() {
     const widgetConfig = {
       apiKey: "",
       position: "bottom-right",
@@ -298,11 +298,109 @@
           height: 32px;
         }
       }
+
+      /* Instant reply popup styles */
+      .instant-reply-container {
+        position: fixed;
+        z-index: 10001;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+      .instant-reply-container.bottom-right {
+        bottom: 20px;
+        right: 90px;
+        align-items: flex-end;
+      }
+      .instant-reply-container.bottom-left {
+        bottom: 20px;
+        left: 90px;
+        align-items: flex-start;
+      }
+      .instant-reply-container.top-right {
+        top: 20px;
+        right: 90px;
+        align-items: flex-end;
+      }
+      .instant-reply-container.top-left {
+        top: 20px;
+        left: 90px;
+        align-items: flex-start;
+      }
+      .instant-reply-popup {
+        background: ${colors.primary};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 280px;
+        pointer-events: auto;
+        cursor: pointer;
+        animation: slideInFromRight 0.3s ease;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        margin: 4px 0;
+      }
+      .instant-reply-popup:hover {
+        transform: translateX(-2px);
+      }
+      .instant-reply-popup.fade-out {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      @keyframes slideInFromRight {
+        from {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Add a tail/arrow pointing to the chat icon */
+      .instant-reply-popup:after {
+        content: '';
+        position: absolute;
+        right: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        border-style: solid;
+        border-width: 8px 0 8px 8px;
+        border-color: transparent transparent transparent ${colors.primary};
+      }
+
+      /* For left-positioned widgets, flip the tail */
+      .instant-reply-container.bottom-left .instant-reply-popup:after,
+      .instant-reply-container.top-left .instant-reply-popup:after {
+        right: auto;
+        left: -8px;
+        border-width: 8px 8px 8px 0;
+        border-color: transparent ${colors.primary} transparent transparent;
+      }
+
+      /* Adjust animation for left-positioned widgets */
+      .instant-reply-container.bottom-left .instant-reply-popup,
+      .instant-reply-container.top-left .instant-reply-popup {
+        animation: slideInFromLeft 0.3s ease;
+      }
+
+      @keyframes slideInFromLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
     `;
       document.head.appendChild(style);
     }
     function createWidget() {
-      var _a, _b, _c, _d;
+      var _a, _b, _c;
       const toggleButton = document.createElement("button");
       toggleButton.className = `chatbot-toggle-button ${widgetConfig.position}`;
       if ((_a = widgetConfig.settings) == null ? void 0 : _a.avatarUrl) {
@@ -318,31 +416,23 @@
       }
       const widgetContainer = document.createElement("div");
       widgetContainer.className = `chatbot-widget-container ${widgetConfig.position} hidden`;
-      const tooltip = document.createElement("div");
-      tooltip.className = `chatbot-tooltip ${widgetConfig.position}`;
-      tooltip.innerHTML = `
-            ${((_c = widgetConfig.settings) == null ? void 0 : _c.name) || "Need help?"} <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
-        `;
+      const instantReplyContainer = document.createElement("div");
+      instantReplyContainer.className = `instant-reply-container ${widgetConfig.position}`;
+      let instantReplyLoopRunning = false;
       const iframe = document.createElement("iframe");
       iframe.className = "chatbot-iframe";
-      const chatbotUrl = new URL("https://aibotwizard.vercel.app/chatbot-embed");
+      const chatbotUrl = new URL("http://localhost:5174/chatbot-embed");
       chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
       chatbotUrl.searchParams.append("isWidget", "true");
-      if ((_d = widgetConfig.settings) == null ? void 0 : _d.leadCapture) {
+      if ((_c = widgetConfig.settings) == null ? void 0 : _c.leadCapture) {
         chatbotUrl.searchParams.append("leadCapture", "true");
       }
       iframe.src = chatbotUrl.toString();
       widgetContainer.appendChild(iframe);
       document.body.appendChild(toggleButton);
       document.body.appendChild(widgetContainer);
-      document.body.appendChild(tooltip);
+      document.body.appendChild(instantReplyContainer);
       toggleButton.classList.add("animate-pulse-theme");
-      setTimeout(() => {
-        tooltip.classList.add("visible");
-        setTimeout(() => {
-          tooltip.classList.remove("visible");
-        }, 5e3);
-      }, 2e3);
       function closeWidget() {
         widgetContainer.classList.remove("visible");
         widgetContainer.classList.add("hidden");
@@ -370,8 +460,68 @@
         }, 300);
         isOpen = true;
       }
+      function showInstantReply(message, displayDuration = 4e3) {
+        const startTime = (/* @__PURE__ */ new Date()).toLocaleTimeString();
+        instantReplyContainer.innerHTML = "";
+        const popup = document.createElement("div");
+        popup.className = "instant-reply-popup";
+        popup.innerHTML = message;
+        popup.addEventListener("click", () => {
+          openWidget();
+          instantReplyContainer.innerHTML = "";
+        });
+        instantReplyContainer.appendChild(popup);
+        setTimeout(() => {
+          const endTime = (/* @__PURE__ */ new Date()).toLocaleTimeString();
+          popup.classList.add("fade-out");
+          setTimeout(() => popup.remove(), 300);
+        }, displayDuration);
+      }
+      async function fetchInstantReplies() {
+        if (instantReplyLoopRunning) {
+          return;
+        }
+        try {
+          const response = await fetch("http://localhost:8000/api/instant-reply/", {
+            headers: {
+              "X-API-Key": widgetConfig.apiKey
+            }
+          });
+          const data = await response.json();
+          if (data && data.status === "success" && data.data && data.data.isActive) {
+            const messages = data.data.messages || [];
+            if (messages.length > 0) {
+              let showMessagesLoop = function() {
+                const loopStartTime = (/* @__PURE__ */ new Date()).toLocaleTimeString();
+                let currentTime = 0;
+                sortedMessages.forEach((messageObj, index) => {
+                  const scheduledTime = new Date(Date.now() + currentTime).toLocaleTimeString();
+                  setTimeout(() => {
+                    if (!isOpen) {
+                      showInstantReply(messageObj.message, 4e3);
+                    } else {
+                      console.log(`\u274C Message ${index + 1} skipped (chat is open)`);
+                    }
+                  }, currentTime);
+                  currentTime += 6e3;
+                });
+                const totalCycleTime = currentTime + 2e3;
+                const nextLoopTime = new Date(Date.now() + totalCycleTime).toLocaleTimeString();
+                setTimeout(showMessagesLoop, totalCycleTime);
+              };
+              const sortedMessages = messages.sort((a, b) => a.order - b.order);
+              instantReplyLoopRunning = true;
+              showMessagesLoop();
+            }
+          } else {
+            console.log("\u274C Instant replies not active or no messages available");
+          }
+        } catch (error) {
+          console.error("\u{1F4A5} Error fetching instant replies:", error);
+        }
+      }
       window.addEventListener("message", (event) => {
-        if (event.origin !== "https://aibotwizard.vercel.app") {
+        if (event.origin !== "http://localhost:5174") {
           return;
         }
         if (event.data === "closeChatbot") {
@@ -386,6 +536,9 @@
           openWidget();
         }
       });
+      setTimeout(() => {
+        fetchInstantReplies();
+      }, 2e3);
     }
     async function init() {
       if (parseConfig()) {

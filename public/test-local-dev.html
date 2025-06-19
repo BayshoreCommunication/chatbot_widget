@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget Local Development Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f0f2f5;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .debug {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            border-left: 4px solid #007bff;
+        }
+
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        .controls button {
+            margin: 5px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+
+        .controls button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔧 Chat Widget Local Development Test</h1>
+    <p>Testing the embedded AI chatbot widget with local development server.</p>
+
+    <div class="warning">
+        <strong>⚠️ Development Mode:</strong> This test assumes you have a local development server running.
+        If the widget doesn't work, make sure your local server is running on <code>http://localhost:3000</code> or
+        update the script below.
+    </div>
+
+    <div class="info">
+        <strong>📝 How to use:</strong>
+        <ol>
+            <li>Make sure your local development server is running (usually <code>npm run dev</code>)</li>
+            <li>Update the widget script below if your server runs on a different port</li>
+            <li>The widget will connect to your local development environment</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Widget Status</h2>
+        <div id="widget-status" class="debug">Initializing...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Development Controls</h2>
+        <div class="controls">
+            <button onclick="checkLocalServer()">Check Local Server</button>
+            <button onclick="testWidgetLoaded()">Check Widget Loaded</button>
+            <button onclick="showWidgetInfo()">Show Widget Info</button>
+            <button onclick="reloadWidget()">Reload Widget</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Debug Log</h2>
+        <div id="debug-log" class="debug">
+            <div>🚀 Development test loaded at: <span id="load-time"></span></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Local Development Notes</h2>
+        <ul>
+            <li><strong>Widget Script:</strong> Using production build (<code>chatbot-widget.min.js</code>)</li>
+            <li><strong>Backend URL:</strong> Will attempt to connect to production API</li>
+            <li><strong>For full local testing:</strong> You may need to modify the widget source to point to your local
+                backend</li>
+            <li><strong>CORS:</strong> Make sure your local server has CORS configured properly</li>
+        </ul>
+    </div>
+
+    <script>
+        // Set load time
+        document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
+
+        // Debug logging function
+        function log(message, type = 'info') {
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.innerHTML = `[${timestamp}] ${message}`;
+            entry.className = type;
+            debugLog.appendChild(entry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(`[Dev Test] ${message}`);
+        }
+
+        // Widget status tracking
+        function updateWidgetStatus(status, type = 'info') {
+            const statusEl = document.getElementById('widget-status');
+            statusEl.textContent = status;
+            statusEl.className = `debug ${type}`;
+        }
+
+        // Check if local development server is accessible
+        function checkLocalServer() {
+            log('🔍 Checking local development server...');
+
+            fetch('http://localhost:3000')
+                .then(response => {
+                    log('✅ Local server is accessible', 'success');
+                    updateWidgetStatus('Local server detected', 'success');
+                })
+                .catch(error => {
+                    log('❌ Local server not accessible: ' + error.message, 'error');
+                    updateWidgetStatus('Local server not found', 'error');
+                });
+        }
+
+        // Test functions
+        function testWidgetLoaded() {
+            const toggleButton = document.querySelector('.chatbot-toggle-button');
+            const widgetContainer = document.querySelector('.chatbot-widget-container');
+
+            if (toggleButton && widgetContainer) {
+                log('✅ Widget elements found in DOM', 'success');
+                updateWidgetStatus('Widget loaded successfully', 'success');
+                return true;
+            } else {
+                log('❌ Widget elements not found', 'error');
+                updateWidgetStatus('Widget failed to load', 'error');
+                return false;
+            }
+        }
+
+        function showWidgetInfo() {
+            const script = document.querySelector('script[data-api-key]');
+            if (script) {
+                log(`🔑 API Key: ${script.getAttribute('data-api-key')}`);
+                log(`📍 Position: ${script.getAttribute('data-position') || 'bottom-right (default)'}`);
+                log(`📜 Script Source: ${script.getAttribute('src')}`);
+            }
+
+            // Check iframe URL
+            const iframe = document.querySelector('.chatbot-iframe');
+            if (iframe) {
+                log(`🌐 Iframe URL: ${iframe.src}`);
+            }
+        }
+
+        function reloadWidget() {
+            log('🔄 Reloading widget...');
+
+            // Remove existing widget elements
+            const toggleButton = document.querySelector('.chatbot-toggle-button');
+            const widgetContainer = document.querySelector('.chatbot-widget-container');
+            const tooltip = document.querySelector('.chatbot-tooltip');
+
+            if (toggleButton) toggleButton.remove();
+            if (widgetContainer) widgetContainer.remove();
+            if (tooltip) tooltip.remove();
+
+            // Reload the page to reinitialize the widget
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+
+        // Error tracking
+        window.addEventListener('error', function (e) {
+            log(`❌ Error: ${e.message} (${e.filename}:${e.lineno})`, 'error');
+        });
+
+        // Listen for widget messages
+        window.addEventListener('message', function (event) {
+            log(`📨 Received message: ${JSON.stringify(event.data)}`);
+        });
+
+        // Initialize checks
+        setTimeout(() => {
+            checkLocalServer();
+            testWidgetLoaded();
+        }, 1000);
+
+        log('📄 Development test script loaded');
+    </script>
+
+    <!-- Widget Script - Points to production API but serves from local build -->
+    <script src="./chatbot-widget.min.js" data-api-key="org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea"
+        data-position="bottom-right" async></script>
+</body>
+
+</html>

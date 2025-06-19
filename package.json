@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:widget": "node scripts/build-widget.js",
+    "test:widget": "npm run build:widget && node scripts/serve-test.js",
+    "serve:test": "node scripts/serve-test.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy": "vercel --prod"

@@ -318,6 +318,104 @@
           height: 32px;
         }
       }
+
+      /* Instant reply popup styles */
+      .instant-reply-container {
+        position: fixed;
+        z-index: 10001;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+      .instant-reply-container.bottom-right {
+        bottom: 20px;
+        right: 90px;
+        align-items: flex-end;
+      }
+      .instant-reply-container.bottom-left {
+        bottom: 20px;
+        left: 90px;
+        align-items: flex-start;
+      }
+      .instant-reply-container.top-right {
+        top: 20px;
+        right: 90px;
+        align-items: flex-end;
+      }
+      .instant-reply-container.top-left {
+        top: 20px;
+        left: 90px;
+        align-items: flex-start;
+      }
+      .instant-reply-popup {
+        background: ${colors.primary};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 280px;
+        pointer-events: auto;
+        cursor: pointer;
+        animation: slideInFromRight 0.3s ease;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        margin: 4px 0;
+      }
+      .instant-reply-popup:hover {
+        transform: translateX(-2px);
+      }
+      .instant-reply-popup.fade-out {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      @keyframes slideInFromRight {
+        from {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Add a tail/arrow pointing to the chat icon */
+      .instant-reply-popup:after {
+        content: '';
+        position: absolute;
+        right: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        border-style: solid;
+        border-width: 8px 0 8px 8px;
+        border-color: transparent transparent transparent ${colors.primary};
+      }
+
+      /* For left-positioned widgets, flip the tail */
+      .instant-reply-container.bottom-left .instant-reply-popup:after,
+      .instant-reply-container.top-left .instant-reply-popup:after {
+        right: auto;
+        left: -8px;
+        border-width: 8px 8px 8px 0;
+        border-color: transparent ${colors.primary} transparent transparent;
+      }
+
+      /* Adjust animation for left-positioned widgets */
+      .instant-reply-container.bottom-left .instant-reply-popup,
+      .instant-reply-container.top-left .instant-reply-popup {
+        animation: slideInFromLeft 0.3s ease;
+      }
+
+      @keyframes slideInFromLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
     `;
     document.head.appendChild(style);
   }
@@ -345,19 +443,19 @@
     const widgetContainer = document.createElement('div');
     widgetContainer.className = `chatbot-widget-container ${widgetConfig.position} hidden`;
 
-    // Create the tooltip
-    const tooltip = document.createElement('div');
-    tooltip.className = `chatbot-tooltip ${widgetConfig.position}`;
-    tooltip.innerHTML = `
-            ${widgetConfig.settings?.name || 'Need help?'} <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
-        `;
+    // Create instant reply container
+    const instantReplyContainer = document.createElement('div');
+    instantReplyContainer.className = `instant-reply-container ${widgetConfig.position}`;
+
+    // Flag to prevent multiple loops
+    let instantReplyLoopRunning = false;
 
     // Create the iframe that will load the chatbot
     const iframe = document.createElement('iframe');
     iframe.className = 'chatbot-iframe';
 
     // Set the iframe source to load the chatbot with the apiKey parameter
-    const chatbotUrl = new URL('https://aibotwizard.vercel.app/chatbot-embed');
+    const chatbotUrl = new URL('http://localhost:5174/chatbot-embed');
     chatbotUrl.searchParams.append('apiKey', widgetConfig.apiKey);
     chatbotUrl.searchParams.append('isWidget', 'true');
 
@@ -374,20 +472,10 @@
     // Add the elements to the DOM
     document.body.appendChild(toggleButton);
     document.body.appendChild(widgetContainer);
-    document.body.appendChild(tooltip);
+    document.body.appendChild(instantReplyContainer);
 
     // Add a pulse animation to the button
     toggleButton.classList.add('animate-pulse-theme');
-
-    // Show tooltip after a delay
-    setTimeout(() => {
-      tooltip.classList.add('visible');
-
-      // Hide tooltip after 5 seconds
-      setTimeout(() => {
-        tooltip.classList.remove('visible');
-      }, 5000);
-    }, 2000);
 
     // Function to close the chat widget with animation
     function closeWidget() {
@@ -436,10 +524,104 @@
       isOpen = true;
     }
 
+    // Function to show instant reply popup
+    function showInstantReply(message, displayDuration = 4000) {
+      const startTime = new Date().toLocaleTimeString();
+
+      // Clear any existing popups first (only show one at a time)
+      instantReplyContainer.innerHTML = '';
+
+      const popup = document.createElement('div');
+      popup.className = 'instant-reply-popup';
+      popup.innerHTML = message;
+
+      // Add click handler to open chat
+      popup.addEventListener('click', () => {
+        openWidget();
+        // Remove all popups when chat is opened
+        instantReplyContainer.innerHTML = '';
+      });
+
+      // Add to container
+      instantReplyContainer.appendChild(popup);
+
+      // Auto remove after specified duration (4 seconds by default)
+      setTimeout(() => {
+        const endTime = new Date().toLocaleTimeString();
+        popup.classList.add('fade-out');
+        setTimeout(() => popup.remove(), 300);
+      }, displayDuration);
+    }
+
+    // Function to fetch and display instant replies with continuous looping
+    async function fetchInstantReplies() {
+      // Prevent multiple loops from running
+      if (instantReplyLoopRunning) {
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:8000/api/instant-reply/', {
+          headers: {
+            'X-API-Key': widgetConfig.apiKey
+          }
+        });
+        const data = await response.json();
+
+        if (data && data.status === 'success' && data.data && data.data.isActive) {
+          const messages = data.data.messages || [];
+
+          if (messages.length > 0) {
+            // Sort messages by order
+            const sortedMessages = messages.sort((a, b) => a.order - b.order);
+
+            // Set flag to prevent multiple loops
+            instantReplyLoopRunning = true;
+
+            // Function to show messages in a loop
+            function showMessagesLoop() {
+              const loopStartTime = new Date().toLocaleTimeString();
+
+              let currentTime = 0;
+
+              sortedMessages.forEach((messageObj, index) => {
+                const scheduledTime = new Date(Date.now() + currentTime).toLocaleTimeString();
+
+                setTimeout(() => {
+                  if (!isOpen) { // Only show if chat is not open
+                    showInstantReply(messageObj.message, 4000); // Show for 4 seconds
+                  } else {
+                    console.log(`❌ Message ${index + 1} skipped (chat is open)`);
+                  }
+                }, currentTime);
+
+                // Next message should start after: current message display time (4s) + interval (2s)
+                currentTime += 6000; // 4000ms display + 2000ms interval
+              });
+
+              // Schedule next loop: after all messages are done + 2 second interval
+              // Total time = last message start + 4s display + 2s interval
+              const totalCycleTime = currentTime + 2000;
+              const nextLoopTime = new Date(Date.now() + totalCycleTime).toLocaleTimeString();
+
+              setTimeout(showMessagesLoop, totalCycleTime);
+            }
+
+            // Start the message loop
+            showMessagesLoop();
+          }
+        } else {
+          console.log('❌ Instant replies not active or no messages available');
+        }
+      } catch (error) {
+        console.error('💥 Error fetching instant replies:', error);
+      }
+    }
+
     // Listen for messages from the iframe
     window.addEventListener('message', (event) => {
       // Verify origin for security
-      if (event.origin !== 'https://aibotwizard.vercel.app') {
+      if (event.origin !== 'http://localhost:5174') {
         return;
       }
 
@@ -458,6 +640,11 @@
         openWidget();
       }
     });
+
+    // Start fetching instant replies after widget initialization
+    setTimeout(() => {
+      fetchInstantReplies();
+    }, 2000); // Wait 2 seconds after widget initialization
   }
 
   // Initialize the widget
