@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import type { Message, AppointmentSlot } from './types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RiRobot3Line } from 'react-icons/ri';
+import { RiRobot3Line, RiCalendarEventLine, RiExternalLinkLine } from 'react-icons/ri';
 
 interface MessageBubbleProps {
     message: Message;
     onOptionClick?: (option: string) => void;
     onSlotSelect?: (slot: AppointmentSlot) => void;
     onSlotConfirm?: (slot: AppointmentSlot) => void;
+}
+
+interface AppointmentBookingLink {
+    text: string;
+    url: string;
+    appointmentDetails?: {
+        date: string;
+        time: string;
+    };
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -47,6 +56,50 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         } else if (selectedLocalSlot && onSlotConfirm) {
             onSlotConfirm(selectedLocalSlot);
         }
+    };
+
+    // Helper function to parse appointment booking links
+    const parseAppointmentBookingLinks = (text: string): { cleanText: string; bookingLinks: AppointmentBookingLink[] } => {
+        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+        const bookingLinks: AppointmentBookingLink[] = [];
+        let cleanText = text;
+
+        // Extract appointment details if present in the text
+        const dateMatch = text.match(/(?:for\s+)?(\w+day),\s+([A-Za-z]+\s+\d+,\s+\d+)/i);
+        const timeMatch = text.match(/at\s+(\d+:\d+\s+[AP]M)/i);
+
+        let match;
+        while ((match = linkRegex.exec(text)) !== null) {
+            const [fullMatch, linkText, url] = match;
+
+            // Check if this is likely a booking link (Calendly, booking-related text, etc.)
+            const isBookingLink = url.includes('calendly.com') ||
+                url.includes('booking') ||
+                linkText.toLowerCase().includes('book') ||
+                linkText.toLowerCase().includes('schedule') ||
+                linkText.toLowerCase().includes('appointment');
+
+            if (isBookingLink) {
+                const appointmentDetails = dateMatch && timeMatch ? {
+                    date: `${dateMatch[1]}, ${dateMatch[2]}`,
+                    time: timeMatch[1]
+                } : undefined;
+
+                bookingLinks.push({
+                    text: linkText,
+                    url,
+                    appointmentDetails
+                });
+
+                // Remove the markdown link from the clean text
+                cleanText = cleanText.replace(fullMatch, '');
+            }
+        }
+
+        // Clean up any leftover formatting
+        cleanText = cleanText.replace(/\n\s*\n/g, '\n').trim();
+
+        return { cleanText, bookingLinks };
     };
 
     // Helper function to parse appointment slots from text
@@ -90,6 +143,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         return slots;
     };
 
+    // Parse the message for booking links
+    const { cleanText, bookingLinks } = parseAppointmentBookingLinks(text);
+
     // If appointmentSlots is not provided but text contains appointment info, try to parse it
     const hasAppointmentInfo = text.includes('appointment') &&
         (text.includes('Available appointment slots') ||
@@ -103,15 +159,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     // Extract any intro text that should still be displayed
     const getIntroText = () => {
-        if (!hasAppointmentInfo || !displaySlots || displaySlots.length === 0) return text;
+        if (!hasAppointmentInfo || !displaySlots || displaySlots.length === 0) return cleanText;
 
         // Split by the first occurrence of a list pattern
-        const parts = text.split(/(?=(?:-|\*|•|\d+\.)\s+.*\d+:\d+\s+[AP]M)/i);
+        const parts = cleanText.split(/(?=(?:-|\*|•|\d+\.)\s+.*\d+:\d+\s+[AP]M)/i);
         if (parts.length > 1) {
             return parts[0].trim();
         }
 
-        return text.split('\n').filter(line =>
+        return cleanText.split('\n').filter(line =>
             !line.match(/\d+:\d+\s+[AP]M/i) &&
             !line.trim().startsWith('-') &&
             !line.trim().startsWith('*') &&
@@ -145,6 +201,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         animate: { opacity: 1, y: 0 }
     };
 
+    const bookingLinkVariants = {
+        initial: { opacity: 0, y: 15, scale: 0.95 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        hover: {
+            scale: 1.02,
+            boxShadow: "0 8px 25px rgba(99, 102, 241, 0.4)",
+            transition: { duration: 0.2 }
+        },
+        tap: { scale: 0.98 }
+    };
+
     return (
         <div className={`flex ${isBot ? 'justify-start' : 'justify-end'}`}>
             {isBot && (
@@ -172,10 +239,86 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 >
                     {/* Show only intro text when appointment slots are available */}
                     {(!displaySlots || displaySlots.length === 0) ? (
-                        <p className={`whitespace-pre-wrap break-words leading-relaxed tracking-wide ${!isBot ? 'font-medium' : ''}`}>{text}</p>
+                        <p className={`whitespace-pre-wrap break-words leading-relaxed tracking-wide ${!isBot ? 'font-medium' : ''}`}>{cleanText}</p>
                     ) : (
                         <p className={`whitespace-pre-wrap break-words leading-relaxed tracking-wide ${!isBot ? 'font-medium' : ''}`}>{introText}</p>
                     )}
+
+                    {/* Professional Appointment Booking Links */}
+                    <AnimatePresence>
+                        {isBot && bookingLinks.length > 0 && (
+                            <motion.div
+                                className="mt-4 space-y-3"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                transition={{ duration: 0.4, ease: "easeOut" }}
+                            >
+                                {bookingLinks.map((link, index) => (
+                                    <motion.div
+                                        key={index}
+                                        className="relative"
+                                        variants={bookingLinkVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        whileHover="hover"
+                                        whileTap="tap"
+                                        transition={{ delay: index * 0.1 }}
+                                    >
+                                        {/* Professional Appointment Card */}
+                                        <div className="bg-gray-700 rounded-xl p-4 shadow-lg border border-gray-600 backdrop-blur-sm">
+                                            {/* Header */}
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
+                                                        <RiCalendarEventLine className="text-white text-lg" />
+                                                    </div>
+                                                    <h3 className="font-semibold text-gray-100 text-sm">
+                                                        Appointment Ready
+                                                    </h3>
+                                                </div>
+                                                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                                            </div>
+
+                                            {/* Appointment Details */}
+                                            {link.appointmentDetails && (
+                                                <div className="mb-4 p-3 bg-gray-800 rounded-lg border border-gray-600">
+                                                    <div className="text-gray-300 text-xs font-medium mb-1">Scheduled for:</div>
+                                                    <div className="text-gray-100 font-semibold text-sm">
+                                                        {link.appointmentDetails.date}
+                                                    </div>
+                                                    <div className="text-gray-200 text-sm">
+                                                        {link.appointmentDetails.time}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Action Button */}
+                                            <motion.a
+                                                href={link.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group relative w-full inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg transition-all duration-200 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-700"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                <span className="flex items-center space-x-2">
+                                                    <span>{link.text}</span>
+                                                    <RiExternalLinkLine className="text-sm transition-transform group-hover:translate-x-0.5" />
+                                                </span>
+                                            </motion.a>
+
+                                            {/* Footer */}
+                                            <div className="mt-3 flex items-center justify-between text-gray-400 text-xs">
+                                                <span>Click to confirm your booking</span>
+                                                <span>•</span>
+                                                <span>Calendly</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Regular options */}
                     {isBot && options && options.length > 0 && !displaySlots && (

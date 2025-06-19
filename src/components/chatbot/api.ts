@@ -30,8 +30,8 @@ export interface ChatApiConfig {
 
 // Default API configuration
 const DEFAULT_CONFIG: ChatApiConfig = {
-    apiUrl: 'https://botapi.bayshorecommunication.org/api/chatbot/ask',
-    apiKey: 'org_sk_5e0fbaa347d2b4658002212f97e5f818'
+    apiUrl: 'http://localhost:8000/api/chatbot/ask',
+    apiKey: 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
 };
 
 export class ChatApi {
@@ -45,7 +45,7 @@ export class ChatApi {
     async getConversationHistory(sessionId: string): Promise<ChatResponse> {
         try {
             // Use the direct history endpoint
-            const response = await fetch(`https://botapi.bayshorecommunication.org/api/chatbot/history/${sessionId}`, {
+            const response = await fetch(`http://localhost:8000/api/chatbot/history/${sessionId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

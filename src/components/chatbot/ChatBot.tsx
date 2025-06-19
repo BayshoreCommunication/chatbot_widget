@@ -5,6 +5,7 @@ import ChatInput from './ChatInput';
 import type { Message, BotMode, AppointmentSlot } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
+import { io, Socket } from 'socket.io-client';
 
 interface ChatBotProps {
     apiKey?: string;
@@ -40,7 +41,7 @@ interface ChatResponse {
 
 const ChatBot: React.FC<ChatBotProps> = ({
     apiKey,
-    customApiUrl = 'https://botapi.bayshorecommunication.org/api/chatbot/ask',
+    customApiUrl = 'http://localhost:8000/api/chatbot/ask',
     embedded = false,
     initiallyOpen = false,
     onToggleChat,
@@ -58,6 +59,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     const [tooltipText, setTooltipText] = useState('Hello! I\'m your AI assistant. Need help?');
     const [tooltipKey, setTooltipKey] = useState(0);
     const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const socketRef = useRef<Socket | null>(null);
     const tooltipTexts = [
         'Hello! I\'m your AI assistant. Need help?',
         'Have a question? Click here to chat!',
@@ -80,14 +82,16 @@ const ChatBot: React.FC<ChatBotProps> = ({
         }
     };
 
+    console.log('apiKey', apiKey);
+
     // API Functions
     const getConversationHistory = async (sessionId: string): Promise<ChatResponse> => {
         try {
-            const response = await fetch(`https://botapi.bayshorecommunication.org/api/chatbot/history/${sessionId}`, {
+            const response = await fetch(`http://localhost:8000/api/chatbot/history/${sessionId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-Key': apiKey || ''
+                    'X-API-Key': apiKey || 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
                 }
             });
 
@@ -108,7 +112,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-Key': apiKey || ''
+                    'X-API-Key': apiKey || 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
                 },
                 body: JSON.stringify({
                     question: message,
@@ -140,7 +144,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-Key': apiKey || ''
+                    'X-API-Key': apiKey || 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
                 },
                 body: JSON.stringify({
                     question: message,
@@ -217,6 +221,42 @@ const ChatBot: React.FC<ChatBotProps> = ({
     useEffect(() => {
         localStorage.setItem('chatSessionId', sessionId);
     }, [sessionId]);
+
+    // Initialize socket connection
+    useEffect(() => {
+        if (apiKey) {
+            // Connect to socket server
+            socketRef.current = io('http://localhost:8000', {
+                auth: {
+                    apiKey: apiKey || 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
+                }
+            });
+
+            // Join organization room
+            socketRef.current.emit('join_room', {
+                room: `org_${apiKey}`
+            });
+
+            // Listen for new messages
+            socketRef.current.on('new_message', (data) => {
+                if (data.session_id === sessionId) {
+                    const newMessage: Message = {
+                        id: Date.now().toString(),
+                        text: data.message.content,
+                        sender: data.message.role === 'user' ? 'user' : 'bot',
+                        timestamp: new Date(data.message.timestamp)
+                    };
+                    setMessages(prev => [...prev, newMessage]);
+                }
+            });
+
+            return () => {
+                if (socketRef.current) {
+                    socketRef.current.disconnect();
+                }
+            };
+        }
+    }, [apiKey]);
 
     // Initialize chat and fetch conversation history
     useEffect(() => {

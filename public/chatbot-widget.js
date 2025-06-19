@@ -1,6 +1,6 @@
 (() => {
   // public/widget/widget.js
-  (function() {
+  (function () {
     const widgetConfig = {
       apiKey: "",
       position: "bottom-right",
@@ -58,7 +58,7 @@
     }
     async function fetchSettings() {
       try {
-        const response = await fetch("https://botapi.bayshorecommunication.org/api/chatbot/settings", {
+        const response = await fetch("http://localhost:8000/api/chatbot/settings", {
           method: "GET",
           headers: {
             "X-API-Key": widgetConfig.apiKey,
