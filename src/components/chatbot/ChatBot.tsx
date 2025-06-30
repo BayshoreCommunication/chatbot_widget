@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import ChatHeader from './ChatHeader';
 import ChatBody from './ChatBody';
 import ChatInput from './ChatInput';
@@ -26,16 +27,22 @@ interface ChatbotSettings {
 interface ConversationMessage {
     role: 'user' | 'assistant';
     content: string;
+    metadata?: {
+        type?: string;
+        agent_id?: string;
+    };
 }
 
 interface ChatResponse {
     answer: string;
     mode: string;
     language: string;
+    agent_mode?: boolean;
     user_data: {
         conversation_history: ConversationMessage[];
         name: string;
         email: string;
+        agent_mode?: boolean;
     };
 }
 
@@ -79,6 +86,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
     // const [lastInteractionTime, setLastInteractionTime] = useState<number>(Date.now());
     // const [hasInteracted, setHasInteracted] = useState(false);
 
+    // Socket.IO state for real-time admin messages
+    const [isAgentMode, setIsAgentMode] = useState(false);
+    const [agentId, setAgentId] = useState<string | null>(null);
+    const socketRef = useRef<Socket | null>(null);
+
     // Add function to force scroll to bottom
     const forceScrollToBottom = () => {
         setForceScrollBottom(prev => prev + 1);
@@ -97,7 +109,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-Key': apiKey || 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
+                    'X-API-Key': apiKey || 'org_sk_4d76d9a9c4d342d72ee0540c71932bed'
                 }
             });
 
@@ -118,7 +130,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-Key': apiKey || 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
+                    'X-API-Key': apiKey || 'org_sk_4d76d9a9c4d342d72ee0540c71932bed'
                 },
                 body: JSON.stringify({
                     question: message,
@@ -150,7 +162,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-Key': apiKey || 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
+                    'X-API-Key': apiKey || 'org_sk_4d76d9a9c4d342d72ee0540c71932bed'
                 },
                 body: JSON.stringify({
                     question: message,
@@ -256,6 +268,19 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 const response = await getConversationHistory(savedSession);
 
                 if (response.user_data && response.user_data.conversation_history) {
+                    // Check if the conversation is in agent mode
+                    if (response.user_data.agent_mode || response.agent_mode) {
+                        setIsAgentMode(true);
+                    }
+
+                    // Fallback: Check if there are any agent messages in the history
+                    const hasAgentMessages = response.user_data.conversation_history.some(
+                        msg => msg.metadata?.type === 'agent_message' || msg.metadata?.agent_id
+                    );
+                    if (hasAgentMessages) {
+                        setIsAgentMode(true);
+                    }
+
                     const historyMessages = convertToMessages(response.user_data.conversation_history);
                     if (historyMessages.length > 0) {
                         setIsPositioningScroll(true);
@@ -389,6 +414,145 @@ const ChatBot: React.FC<ChatBotProps> = ({
         }
     }, [batchedMessages, messages.length]);
 
+    // Socket.IO connection for real-time admin messages
+    useEffect(() => {
+        if (!apiKey) return;
+
+        console.log('[WIDGET] Initializing Socket.IO connection for real-time admin messages');
+
+        // Create socket connection
+        const socketInstance = io('http://localhost:8000', {
+            transports: ['websocket', 'polling'],
+            timeout: 10000,
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            auth: {
+                apiKey: apiKey
+            },
+            query: {
+                apiKey: apiKey
+            },
+            forceNew: true
+        });
+
+        socketRef.current = socketInstance;
+
+        // Connection event handlers
+        socketInstance.on('connect', () => {
+            console.log('[WIDGET] Socket connected successfully');
+            // Join organization room
+            socketInstance.emit('join_room', { room: apiKey });
+        });
+
+        socketInstance.on('connect_error', (error) => {
+            console.error('[WIDGET] Socket connection error:', error);
+        });
+
+        socketInstance.on('disconnect', (reason) => {
+            console.log('[WIDGET] Socket disconnected:', reason);
+        });
+
+        socketInstance.on('connection_confirmed', (data) => {
+            console.log('[WIDGET] Socket connection confirmed:', data);
+        });
+
+        socketInstance.on('room_joined', (data) => {
+            console.log('[WIDGET] Socket room joined:', data);
+        });
+
+        // Handle agent takeover events
+        socketInstance.on('agent_takeover', (data) => {
+            console.log('[WIDGET] Agent takeover received:', data);
+            if (data.session_id === sessionId) {
+                setIsAgentMode(true);
+                setAgentId(data.agent_id || null);
+
+                // Add a system message to indicate agent takeover
+                const takoverMessage: Message = {
+                    id: `takeover_${Date.now()}`,
+                    text: '👋 Hello! A live agent has joined the conversation to provide you with personalized assistance. How can we help you today?',
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, takoverMessage]);
+            }
+        });
+
+        // Handle agent release events
+        socketInstance.on('agent_release', (data) => {
+            console.log('[WIDGET] Agent release received:', data);
+            if (data.session_id === sessionId) {
+                setIsAgentMode(false);
+                setAgentId(null);
+
+                // Add a system message to indicate agent release
+                const releaseMessage: Message = {
+                    id: `release_${Date.now()}`,
+                    text: '🤖 Thank you for chatting with our agent! The conversation has been transferred back to your AI assistant. I\'m here to help with any additional questions.',
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, releaseMessage]);
+            }
+        });
+
+        // Handle real-time admin messages
+        socketInstance.on('new_message', (data) => {
+            console.log('[WIDGET] New message received:', data);
+
+            // Only process messages for this session and from agents
+            if (data.session_id === sessionId && data.message.role === 'assistant' && data.message.agent_id) {
+                console.log('[WIDGET] Processing admin message for current session');
+
+                const adminMessage: Message = {
+                    id: `admin_${Date.now()}`,
+                    text: data.message.content,
+                    sender: 'bot',
+                    timestamp: new Date(data.message.timestamp),
+                };
+
+                setMessages(prev => [...prev, adminMessage]);
+
+                // Stop typing animation if it's running
+                setIsTyping(false);
+            }
+        });
+
+        // Cleanup on unmount
+        return () => {
+            console.log('[WIDGET] Cleaning up Socket.IO connection');
+            socketInstance.disconnect();
+        };
+    }, [apiKey, sessionId]);
+
+    // Handle messages from parent window (for testing)
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data.type === 'getSocketStatus') {
+                // Respond with Socket.IO connection status
+                const connected = socketRef.current?.connected || false;
+                window.parent.postMessage({
+                    type: 'socketStatus',
+                    connected: connected
+                }, '*');
+            } else if (event.data.type === 'testConnection') {
+                window.parent.postMessage({
+                    type: 'connectionTest',
+                    message: 'Connection successful'
+                }, '*');
+            } else if (event.data.type === 'testInstantReplies') {
+                window.parent.postMessage({
+                    type: 'instantReplies',
+                    messages: 'Test completed'
+                }, '*');
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
     // Track user interactions
     const handleUserInteraction = () => {
         // setLastInteractionTime(Date.now());
@@ -417,24 +581,46 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 setCurrentMode(response.mode as BotMode);
             }
 
+            // Check if the response indicates agent mode from the API
+            const responseAgentMode = response.user_data?.agent_mode ||
+                response.agent_mode ||
+                (response.answer && response.answer.includes('agent'));
+
+            if (responseAgentMode && !isAgentMode) {
+                setIsAgentMode(true);
+            }
+
             if (response.user_data) {
                 if (messages.length <= 1) {
                     const historyMessages = convertToMessages(response.user_data.conversation_history);
                     setMessages(historyMessages);
                 } else {
-                    const botMessage: Message = {
-                        id: (Date.now() + 1).toString(),
-                        text: response.answer,
-                        sender: 'bot',
-                        timestamp: new Date(),
-                    };
+                    // Check if we're in agent mode and handle accordingly
+                    if (isAgentMode) {
+                        // If in agent mode, show a professional waiting message
+                        const agentWaitingMessage: Message = {
+                            id: (Date.now() + 1).toString(),
+                            text: '✅ Your message has been received! A live agent is reviewing your inquiry and will respond shortly. Thank you for your patience.',
+                            sender: 'bot',
+                            timestamp: new Date(),
+                        };
+                        setMessages(prev => [...prev, agentWaitingMessage]);
+                    } else {
+                        // Normal AI response when not in agent mode
+                        const botMessage: Message = {
+                            id: (Date.now() + 1).toString(),
+                            text: response.answer,
+                            sender: 'bot',
+                            timestamp: new Date(),
+                        };
 
-                    const appointmentSlots = parseAppointmentSlots(response.answer);
-                    if (appointmentSlots) {
-                        botMessage.appointmentSlots = appointmentSlots;
+                        const appointmentSlots = parseAppointmentSlots(response.answer);
+                        if (appointmentSlots) {
+                            botMessage.appointmentSlots = appointmentSlots;
+                        }
+
+                        setMessages(prev => [...prev, botMessage]);
                     }
-
-                    setMessages(prev => [...prev, botMessage]);
                 }
             }
         } catch (error) {
@@ -618,6 +804,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
                                 currentMode={currentMode}
                                 isLoading={isLoading || isPositioningScroll}
                                 settings={settings}
+                                isAgentMode={isAgentMode}
+                                agentId={agentId}
                             />
                             {isLoading || isPositioningScroll ? (
                                 <motion.div

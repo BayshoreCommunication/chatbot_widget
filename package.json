@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5174",
     "build": "tsc && vite build",
     "build:widget": "node scripts/build-widget.js",
     "test:widget": "npm run build:widget && node scripts/serve-test.js",

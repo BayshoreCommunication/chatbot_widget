@@ -6,6 +6,8 @@ interface ChatHeaderProps {
     currentMode: BotMode;
     isLoading: boolean;
     settings?: ChatbotSettings | null;
+    isAgentMode?: boolean;
+    agentId?: string | null;
 }
 
 // Color mapping for the theme
@@ -27,7 +29,7 @@ const colorMap = {
     }
 } as const;
 
-const ChatHeader: FC<ChatHeaderProps> = ({ toggleChat, settings }) => {
+const ChatHeader: FC<ChatHeaderProps> = ({ toggleChat, settings, isAgentMode, agentId }) => {
     const colorClass = settings?.selectedColor ? colorMap[settings.selectedColor].bg : 'bg-indigo-700 hover:bg-indigo-800';
 
     return (
@@ -49,6 +51,14 @@ const ChatHeader: FC<ChatHeaderProps> = ({ toggleChat, settings }) => {
                         <h2 className="font-medium text-lg text-white">
                             {settings?.name || 'Chatbot'}
                         </h2>
+                        {isAgentMode && (
+                            <div className="flex items-center space-x-1 mt-1">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                <span className="text-xs text-white/80">
+                                    Agent online
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <button

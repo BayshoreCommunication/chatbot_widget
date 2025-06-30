@@ -31,7 +31,7 @@ export interface ChatApiConfig {
 // Default API configuration
 const DEFAULT_CONFIG: ChatApiConfig = {
     apiUrl: 'http://localhost:8000/api/chatbot/ask',
-    apiKey: 'org_sk_f200dbc62a425ba72f6b6bcbb7c4e7ea'
+    apiKey: 'org_sk_4d76d9a9c4d342d72ee0540c71932bed'
 };
 
 export class ChatApi {
