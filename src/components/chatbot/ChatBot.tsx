@@ -159,6 +159,34 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const handleVideoEnd = () => {
     setVideoEnded(true);
     setShowVideo(false);
+
+    // Show welcome message after video ends
+    setTimeout(() => {
+      const welcomeMessage: Message = {
+        id: `video_welcome_${Date.now()}`,
+        text:
+          "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
+          "• Scheduling appointments\n" +
+          "• Answering questions about our services\n" +
+          "• Providing information and support",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+
+      // Only add welcome message if no messages exist yet or only video-related messages
+      setMessages((prev) => {
+        const hasNonSystemMessages = prev.some(
+          (msg) =>
+            msg.sender === "user" ||
+            (msg.sender === "bot" && !msg.id.startsWith("video_welcome_"))
+        );
+
+        if (!hasNonSystemMessages) {
+          return [welcomeMessage];
+        }
+        return prev;
+      });
+    }, 500);
   };
 
   // API Functions
@@ -321,7 +349,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
         video_autoplay: settings.video_autoplay,
         video_duration: settings.video_duration,
       });
-      
+
       // Reset video state when settings change
       setVideoEnded(false);
       setShowVideo(false);
@@ -1010,7 +1038,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
                             muted
                             playsInline
                           >
-                            <source src={settings.video_url} type="video/mp4" />
+                            <source
+                              src={
+                                settings.video_url?.startsWith("http")
+                                  ? settings.video_url
+                                  : `http://localhost:8000${settings.video_url}`
+                              }
+                              type="video/mp4"
+                            />
                             Your browser does not support the video tag.
                           </video>
                           <button
