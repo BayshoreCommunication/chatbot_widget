@@ -1,108 +1,117 @@
-import { useEffect, useState, useCallback } from 'react';
-import ChatBot from '../components/chatbot/ChatBot';
-import { motion, AnimatePresence } from 'framer-motion';
-import type { ChatbotSettings } from '../components/chatbot/types';
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
+import ChatBot from "../components/chatbot/ChatBot";
+import type { ChatbotSettings } from "../components/chatbot/types";
 
 const ChatbotEmbedPage = () => {
-    const [apiKey, setApiKey] = useState<string | undefined>(undefined);
-    const [isWidget, setIsWidget] = useState<boolean>(false);
-    const [isLoaded, setIsLoaded] = useState<boolean>(false);
-    const [settings, setSettings] = useState<ChatbotSettings | null>(null);
-    const [error, setError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | undefined>(undefined);
+  const [isWidget, setIsWidget] = useState<boolean>(false);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [settings, setSettings] = useState<ChatbotSettings | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-    // Fetch chatbot settings
-    const fetchSettings = useCallback(async (apiKey: string) => {
-        try {
-            const response = await fetch('http://localhost:8000/api/chatbot/settings', {
-                method: 'GET',
-                headers: {
-                    'X-API-Key': apiKey,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-            if (data.status === 'success') {
-                setSettings(data.settings);
-            } else {
-                setError('Failed to load chatbot settings');
-            }
-        } catch (error) {
-            console.error('Error fetching settings:', error);
-            setError('Failed to load chatbot settings');
+  // Fetch chatbot settings
+  const fetchSettings = useCallback(async (apiKey: string) => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/chatbot/settings",
+        {
+          method: "GET",
+          headers: {
+            "X-API-Key": apiKey,
+            "Content-Type": "application/json",
+          },
         }
-    }, []);
+      );
 
-    // Callback function for close button click
-    const handleToggleChat = useCallback(() => {
-        // If this is embedded in a widget, send a message to the parent window
-        if (isWidget && window.parent !== window) {
-            window.parent.postMessage('closeChatbot', '*');
-        }
-    }, [isWidget]);
+      const data = await response.json();
+      console.log("Settings response:", data);
+      if (data.status === "success") {
+        setSettings(data.settings);
+        console.log("Settings loaded successfully:", data.settings);
+      } else {
+        console.error("Failed to load settings:", data);
+        setError("Failed to load chatbot settings");
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      setError("Failed to load chatbot settings");
+    }
+  }, []);
 
-    useEffect(() => {
-        // Extract API key from URL query parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        const apiKeyParam = urlParams.get('apiKey');
-        const isWidgetParam = urlParams.get('isWidget');
+  // Callback function for close button click
+  const handleToggleChat = useCallback(() => {
+    // If this is embedded in a widget, send a message to the parent window
+    if (isWidget && window.parent !== window) {
+      window.parent.postMessage("closeChatbot", "*");
+    }
+  }, [isWidget]);
 
-        if (apiKeyParam) {
-            setApiKey(apiKeyParam);
-            fetchSettings(apiKeyParam);
-        }
+  useEffect(() => {
+    // Extract API key from URL query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const apiKeyParam = urlParams.get("apiKey");
+    const isWidgetParam = urlParams.get("isWidget");
 
-        if (isWidgetParam === 'true') {
-            setIsWidget(true);
-        }
+    if (apiKeyParam) {
+      setApiKey(apiKeyParam);
+      fetchSettings(apiKeyParam);
+    }
 
-        // Set loaded state after a small delay to allow for animation
-        setTimeout(() => {
-            setIsLoaded(true);
-        }, 100);
-    }, [fetchSettings]);
+    if (isWidgetParam === "true") {
+      setIsWidget(true);
+    }
 
-    return (
-        <div className="h-screen overflow-hidden">
-            <AnimatePresence>
-                {apiKey ? (
-                    <motion.div
-                        className="h-full"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{
-                            opacity: isLoaded ? 1 : 0,
-                            scale: isLoaded ? 1 : 0.9
-                        }}
-                        transition={{
-                            type: 'spring',
-                            stiffness: 300,
-                            damping: 30
-                        }}
-                    >
-                        <ChatBot
-                            apiKey={apiKey}
-                            embedded={true}
-                            initiallyOpen={true}
-                            onToggleChat={handleToggleChat}
-                            settings={settings}
-                        />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        className="h-full flex items-center justify-center p-5 font-sans"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <div className="bg-red-100 p-5 rounded-lg text-red-800 max-w-[80%] text-center">
-                            <h3 className="font-medium text-lg mb-2">Error</h3>
-                            <p>{error || 'No API key provided. Please make sure the iframe URL includes the apiKey parameter.'}</p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
+    // Set loaded state after a small delay to allow for animation
+    setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+  }, [fetchSettings]);
+
+  return (
+    <div className="h-screen overflow-hidden">
+      <AnimatePresence>
+        {apiKey ? (
+          <motion.div
+            className="h-full"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{
+              opacity: isLoaded ? 1 : 0,
+              scale: isLoaded ? 1 : 0.9,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+            }}
+          >
+            <ChatBot
+              apiKey={apiKey}
+              embedded={true}
+              initiallyOpen={true}
+              onToggleChat={handleToggleChat}
+              settings={settings}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            className="h-full flex items-center justify-center p-5 font-sans"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="bg-red-100 p-5 rounded-lg text-red-800 max-w-[80%] text-center">
+              <h3 className="font-medium text-lg mb-2">Error</h3>
+              <p>
+                {error ||
+                  "No API key provided. Please make sure the iframe URL includes the apiKey parameter."}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
 
-export default ChatbotEmbedPage; 
+export default ChatbotEmbedPage;
