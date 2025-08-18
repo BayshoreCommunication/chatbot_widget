@@ -42,4 +42,8 @@ export interface ChatbotSettings {
     selectedColor: 'black' | 'red' | 'orange' | 'blue' | 'pink';
     leadCapture: boolean;
     avatarUrl: string;
+    auto_open?: boolean;
+    video_url?: string;
+    video_autoplay?: boolean;
+    video_duration?: number;
 } 

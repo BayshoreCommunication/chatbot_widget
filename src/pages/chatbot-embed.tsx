@@ -86,9 +86,27 @@ const ChatbotEmbedPage = () => {
             }}
           >
             <ChatBot
+              key={
+                settings
+                  ? settings?.auto_open === true ||
+                    (typeof settings?.auto_open === "string" &&
+                      settings?.auto_open.toLowerCase() === "true") ||
+                    (settings as any)?.auto_open === 1 ||
+                    (settings as any)?.auto_open === "1"
+                    ? "chatbot-open"
+                    : "chatbot-closed"
+                  : "chatbot-loading"
+              }
               apiKey={apiKey}
               embedded={true}
-              initiallyOpen={true}
+              initiallyOpen={
+                // Coerce possible string/number values to boolean
+                settings?.auto_open === true ||
+                (typeof settings?.auto_open === "string" &&
+                  settings?.auto_open.toLowerCase() === "true") ||
+                (settings as any)?.auto_open === 1 ||
+                (settings as any)?.auto_open === "1"
+              }
               onToggleChat={handleToggleChat}
               settings={settings}
             />

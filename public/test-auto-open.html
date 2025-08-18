@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatbot Auto-Open Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .button {
+        background: #4f46e5;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .button:hover {
+        background: #4338ca;
+      }
+      .info {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Chatbot Auto-Open & Video Test</h1>
+
+      <div class="info">
+        <h3>Test Instructions:</h3>
+        <ul>
+          <li>
+            <strong>New User Test:</strong> Clear localStorage and refresh to
+            test video autoplay for new users
+          </li>
+          <li>
+            <strong>Returning User Test:</strong> After first visit, refresh to
+            test that video doesn't play again
+          </li>
+          <li>
+            <strong>Auto-Open Test:</strong> Check if chatbot opens
+            automatically based on settings
+          </li>
+        </ul>
+      </div>
+
+      <div class="test-section">
+        <h3>Test Controls</h3>
+        <button class="button" onclick="clearStorage()">
+          Clear localStorage (Simulate New User)
+        </button>
+        <button class="button" onclick="checkStorage()">
+          Check Current Storage
+        </button>
+        <button class="button" onclick="location.reload()">Refresh Page</button>
+      </div>
+
+      <div class="test-section">
+        <h3>Current Status</h3>
+        <div id="status">Loading...</div>
+      </div>
+
+      <div class="test-section">
+        <h3>Expected Behavior</h3>
+        <ul>
+          <li>
+            <strong>New Users:</strong> Video should autoplay when chatbot opens
+            (if video_autoplay is enabled)
+          </li>
+          <li><strong>Returning Users:</strong> Video should NOT autoplay</li>
+          <li>
+            <strong>Auto-Open:</strong> Chatbot should open automatically if
+            auto_open setting is true
+          </li>
+          <li>
+            <strong>Tooltip:</strong> Should only show for returning users, not
+            new users
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Chatbot Widget Script -->
+    <script src="chatbot-widget.js" data-api-key="test-api-key"></script>
+
+    <script>
+              function clearStorage() {
+          localStorage.removeItem("chatbot_has_visited");
+          localStorage.removeItem("chatbot_video_seen");
+          localStorage.removeItem("chatSessionId");
+          // Clear any video played flags
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith("videoPlayed:")) {
+              localStorage.removeItem(key);
+            }
+          }
+          alert("localStorage cleared! Refresh the page to test as a new user.");
+        }
+
+              function checkStorage() {
+          const hasVisited = localStorage.getItem("chatbot_has_visited");
+          const hasSeenVideo = localStorage.getItem("chatbot_video_seen");
+          const sessionId = localStorage.getItem("chatSessionId");
+          const videoKeys = [];
+
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith("videoPlayed:")) {
+              videoKeys.push(key);
+            }
+          }
+
+          const status = `
+                <strong>Is New User:</strong> ${!hasVisited && !hasSeenVideo ? "Yes" : "No"}<br>
+                <strong>Has Visited:</strong> ${hasVisited ? "Yes" : "No"}<br>
+                <strong>Has Seen Video:</strong> ${hasSeenVideo ? "Yes" : "No"}<br>
+                <strong>Session ID:</strong> ${sessionId || "None"}<br>
+                <strong>Video Played Keys:</strong> ${
+                  videoKeys.length > 0 ? videoKeys.join(", ") : "None"
+                }
+            `;
+
+          document.getElementById("status").innerHTML = status;
+        }
+
+      // Check status on page load
+      window.addEventListener("load", checkStorage);
+    </script>
+  </body>
+</html>

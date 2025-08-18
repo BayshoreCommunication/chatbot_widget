@@ -64,7 +64,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   settings,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isOpen, setIsOpen] = useState(initiallyOpen || false);
+  const [isOpen, setIsOpen] = useState<boolean>(() => Boolean(initiallyOpen));
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPositioningScroll, setIsPositioningScroll] = useState(false);
@@ -102,6 +102,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const [videoEnded, setVideoEnded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Check if user is new (first time visitor)
+  const [isNewUser, setIsNewUser] = useState<boolean>(() => {
+    const hasVisited = localStorage.getItem("chatbot_has_visited");
+    const hasSeenVideo = localStorage.getItem("chatbot_video_seen");
+    return !hasVisited && !hasSeenVideo;
+  });
+
   // Add function to force scroll to bottom
   const forceScrollToBottom = () => {
     setForceScrollBottom((prev) => prev + 1);
@@ -116,13 +123,22 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   // Handle video functionality
   const handleVideoPlay = () => {
+    console.log("handleVideoPlay called with:", {
+      video_url: settings?.video_url,
+      video_autoplay: settings?.video_autoplay,
+      isNewUser,
+      videoEnded,
+      showVideo,
+    });
+
     if (
       settings?.video_url &&
       settings?.video_autoplay &&
+      isNewUser && // Only play for new users
       !videoEnded &&
       !showVideo
     ) {
-      console.log("Playing video:", settings.video_url);
+      console.log("Playing video for new user:", settings.video_url);
       setShowVideo(true);
 
       // Use setTimeout to ensure DOM is ready
@@ -135,7 +151,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
           if (playPromise !== undefined) {
             playPromise
               .then(() => {
-                console.log("Video started playing");
+                console.log("Video started playing successfully");
                 // Stop video after specified duration
                 const duration = settings.video_duration || 10;
                 setTimeout(() => {
@@ -153,12 +169,28 @@ const ChatBot: React.FC<ChatBotProps> = ({
           }
         }
       }, 100);
+    } else {
+      console.log("Video play conditions not met:", {
+        hasVideoUrl: !!settings?.video_url,
+        videoAutoplay: settings?.video_autoplay,
+        isNewUser,
+        videoEnded,
+        showVideo,
+      });
     }
   };
 
   const handleVideoEnd = () => {
+    console.log("Video ended, marking user as seen video");
     setVideoEnded(true);
     setShowVideo(false);
+
+    // Mark user as having seen the video (this prevents future plays)
+    localStorage.setItem("chatbot_video_seen", "true");
+    setIsNewUser(false);
+
+    // Also mark as visited for general tracking
+    localStorage.setItem("chatbot_has_visited", "true");
 
     // Show welcome message after video ends
     setTimeout(() => {
@@ -339,7 +371,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     localStorage.setItem("chatSessionId", sessionId);
   }, [sessionId]);
 
-  // Debug settings loading
+  // Settings loaded: log and restore video-played state from storage
   useEffect(() => {
     if (settings) {
       console.log("ChatBot settings loaded:", settings);
@@ -349,41 +381,77 @@ const ChatBot: React.FC<ChatBotProps> = ({
         video_autoplay: settings.video_autoplay,
         video_duration: settings.video_duration,
       });
+      console.log("Is new user:", isNewUser);
 
-      // Reset video state when settings change
-      setVideoEnded(false);
+      // Check if user has already seen the video
+      const hasSeenVideo =
+        localStorage.getItem("chatbot_video_seen") === "true";
+      if (hasSeenVideo) {
+        setVideoEnded(true);
+        setIsNewUser(false);
+      }
+
+      // Always hide overlay when settings change
       setShowVideo(false);
     }
-  }, [settings]);
+  }, [settings, sessionId, isNewUser]);
 
-  // Handle auto-open setting
+  // Sync internal open state with initiallyOpen prop when it changes (after settings load)
   useEffect(() => {
-    if (settings?.auto_open && !isOpen && !initiallyOpen) {
-      // Small delay to ensure component is fully mounted and settings are loaded
-      setTimeout(() => {
-        setIsOpen(true);
-      }, 1500);
+    // Accept booleans, 'true' strings, and 1/'1' for safety
+    const shouldOpen =
+      initiallyOpen === true ||
+      (typeof initiallyOpen === "string" &&
+        initiallyOpen.toLowerCase() === "true") ||
+      (initiallyOpen as any) === 1 ||
+      (initiallyOpen as any) === "1";
+    if (shouldOpen && !isOpen) {
+      setIsOpen(true);
     }
-  }, [settings?.auto_open, isOpen, initiallyOpen]);
+  }, [initiallyOpen, isOpen]);
+
+  // Handle auto-open setting (fallback if initiallyOpen wasn't used)
+  useEffect(() => {
+    if (settings?.auto_open && !isOpen) {
+      // Small delay to ensure component is fully mounted and settings are loaded
+      const t = setTimeout(() => {
+        console.log("Auto-opening chatbot due to settings");
+        setIsOpen(true);
+      }, 2000); // Increased delay to ensure everything is loaded
+      return () => clearTimeout(t);
+    }
+  }, [settings?.auto_open, isOpen]);
 
   // Handle video when chat opens
   useEffect(() => {
+    console.log("Video trigger effect - conditions:", {
+      isOpen,
+      hasVideoUrl: !!settings?.video_url,
+      videoAutoplay: settings?.video_autoplay,
+      isNewUser,
+      videoEnded,
+      showVideo
+    });
+
     if (
       isOpen &&
       settings?.video_url &&
       settings?.video_autoplay &&
+      isNewUser && // Only play for new users
       !videoEnded &&
       !showVideo
     ) {
       // Small delay to ensure chat is fully opened
       setTimeout(() => {
+        console.log("Auto-playing video for new user");
         handleVideoPlay();
-      }, 800);
+      }, 1000); // Increased delay to ensure chat is fully loaded
     }
   }, [
     isOpen,
     settings?.video_url,
     settings?.video_autoplay,
+    isNewUser,
     videoEnded,
     showVideo,
   ]);
@@ -730,6 +798,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const handleUserInteraction = () => {
     // setLastInteractionTime(Date.now());
     // setHasInteracted(true);
+
+    // Mark user as visited on first interaction (but don't prevent video if they haven't seen it)
+    if (isNewUser) {
+      localStorage.setItem("chatbot_has_visited", "true");
+      // Don't set isNewUser to false here - let video logic handle that
+    }
   };
 
   // Base message sending function
@@ -830,9 +904,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
     if (!wasOpen) {
       setHistoryFetched(false);
 
-      // Reset video state when opening chat
-      setVideoEnded(false);
-      setShowVideo(false);
+      // Reset video state when opening chat (but only for new users)
+      if (isNewUser) {
+        setVideoEnded(false);
+        setShowVideo(false);
+      }
 
       // Force scroll to bottom after opening
       setTimeout(() => {

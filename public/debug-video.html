@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Debug Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .debug-section {
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background: #f9f9f9;
+      }
+      .button {
+        background: #4f46e5;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .button:hover {
+        background: #4338ca;
+      }
+      .log {
+        background: #000;
+        color: #0f0;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+      .status {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Video Debug Test</h1>
+
+      <div class="debug-section">
+        <h3>Test Controls</h3>
+        <button class="button" onclick="clearAllStorage()">
+          Clear All Storage (New User)
+        </button>
+        <button class="button" onclick="markAsVisited()">
+          Mark as Visited (No Video)
+        </button>
+        <button class="button" onclick="markAsSeenVideo()">
+          Mark as Seen Video
+        </button>
+        <button class="button" onclick="checkCurrentStatus()">
+          Check Status
+        </button>
+        <button class="button" onclick="location.reload()">Refresh Page</button>
+      </div>
+
+      <div class="debug-section">
+        <h3>Current Status</h3>
+        <div id="status">Loading...</div>
+      </div>
+
+      <div class="debug-section">
+        <h3>Console Log</h3>
+        <div id="log" class="log">Waiting for logs...</div>
+      </div>
+
+      <div class="debug-section">
+        <h3>Expected Behavior</h3>
+        <ul>
+          <li>
+            <strong>New User (no localStorage):</strong> Video should autoplay
+            when chatbot opens
+          </li>
+          <li>
+            <strong>Visited User (chatbot_has_visited = true):</strong> Video
+            should still play if they haven't seen it
+          </li>
+          <li>
+            <strong>Video Seen User (chatbot_video_seen = true):</strong> Video
+            should NOT play
+          </li>
+          <li><strong>Auto-open:</strong> Should work based on settings</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Chatbot Widget Script -->
+    <script src="chatbot-widget.js" data-api-key="test-api-key"></script>
+
+    <script>
+      // Capture console logs
+      const originalLog = console.log;
+      const originalError = console.error;
+      const logDiv = document.getElementById("log");
+
+      function addToLog(message, type = "log") {
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+        logDiv.textContent += logEntry;
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+
+      console.log = function (...args) {
+        originalLog.apply(console, args);
+        addToLog(args.join(" "), "log");
+      };
+
+      console.error = function (...args) {
+        originalError.apply(console, args);
+        addToLog(args.join(" "), "error");
+      };
+
+      function clearAllStorage() {
+        localStorage.clear();
+        alert(
+          "All localStorage cleared! Refresh to test as completely new user."
+        );
+      }
+
+      function markAsVisited() {
+        localStorage.setItem("chatbot_has_visited", "true");
+        alert("Marked as visited. Video should still play if not seen before.");
+      }
+
+      function markAsSeenVideo() {
+        localStorage.setItem("chatbot_video_seen", "true");
+        alert("Marked as seen video. Video should NOT play anymore.");
+      }
+
+      function checkCurrentStatus() {
+        const hasVisited = localStorage.getItem("chatbot_has_visited");
+        const hasSeenVideo = localStorage.getItem("chatbot_video_seen");
+        const sessionId = localStorage.getItem("chatSessionId");
+
+        const status = `
+                <strong>Has Visited:</strong> ${hasVisited ? "Yes" : "No"}<br>
+                <strong>Has Seen Video:</strong> ${
+                  hasSeenVideo ? "Yes" : "No"
+                }<br>
+                <strong>Is New User:</strong> ${
+                  !hasVisited && !hasSeenVideo ? "Yes" : "No"
+                }<br>
+                <strong>Session ID:</strong> ${sessionId || "None"}<br>
+                <strong>Video Should Play:</strong> ${
+                  !hasSeenVideo ? "Yes" : "No"
+                }
+            `;
+
+        document.getElementById("status").innerHTML = status;
+      }
+
+      // Check status on page load
+      window.addEventListener("load", () => {
+        setTimeout(checkCurrentStatus, 1000);
+        addToLog("Page loaded, checking status...");
+      });
+
+      // Listen for chatbot messages
+      window.addEventListener("message", (event) => {
+        if (event.data && typeof event.data === "string") {
+          addToLog(`Chatbot message: ${event.data}`);
+        }
+      });
+    </script>
+  </body>
+</html>
