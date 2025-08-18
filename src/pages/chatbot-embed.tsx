@@ -14,7 +14,7 @@ const ChatbotEmbedPage = () => {
   const fetchSettings = useCallback(async (apiKey: string) => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/chatbot/settings",
+        import.meta.env.VITE_API_CHATBOT_SETTINGS_URL,
         {
           method: "GET",
           headers: {

@@ -57,7 +57,7 @@ interface ChatResponse {
 
 const ChatBot: React.FC<ChatBotProps> = ({
   apiKey,
-  customApiUrl = "http://localhost:8000/api/chatbot/ask",
+  customApiUrl = import.meta.env.VITE_API_CHATBOT_URL,
   embedded = false,
   initiallyOpen = false,
   onToggleChat,
@@ -195,12 +195,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
   ): Promise<ChatResponse> => {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/chatbot/history/${sessionId}`,
+        `${import.meta.env.VITE_API_CHATBOT_HISTORY_URL}/${sessionId}`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "X-API-Key": apiKey || "org_sk_4d76d9a9c4d342d72ee0540c71932bed",
+            "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
           },
         }
       );
@@ -225,7 +225,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": apiKey || "org_sk_4d76d9a9c4d342d72ee0540c71932bed",
+          "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
         },
         body: JSON.stringify({
           question: message,
@@ -257,7 +257,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": apiKey || "org_sk_4d76d9a9c4d342d72ee0540c71932bed",
+          "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
         },
         body: JSON.stringify({
           question: message,
@@ -578,20 +578,23 @@ const ChatBot: React.FC<ChatBotProps> = ({
     );
 
     // Create socket connection
-    const socketInstance = io("http://localhost:8000", {
-      transports: ["websocket", "polling"],
-      timeout: 10000,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      auth: {
-        apiKey: apiKey,
-      },
-      query: {
-        apiKey: apiKey,
-      },
-      forceNew: true,
-    });
+    const socketInstance = io(
+      import.meta.env.VITE_SOCKET_URL || "http://localhost:8000",
+      {
+        transports: ["websocket", "polling"],
+        timeout: 10000,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        auth: {
+          apiKey: apiKey,
+        },
+        query: {
+          apiKey: apiKey,
+        },
+        forceNew: true,
+      }
+    );
 
     socketRef.current = socketInstance;
 
@@ -1042,7 +1045,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
                               src={
                                 settings.video_url?.startsWith("http")
                                   ? settings.video_url
-                                  : `http://localhost:8000${settings.video_url}`
+                                  : `${import.meta.env.VITE_API_BASE_URL}${
+                                      settings.video_url
+                                    }`
                               }
                               type="video/mp4"
                             />
