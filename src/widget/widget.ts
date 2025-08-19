@@ -277,7 +277,9 @@
     iframe.className = "chatbot-iframe";
 
     // Set the iframe source to load the chatbot with the apiKey parameter
-    const chatbotUrl = new URL("https://aibotwizard.vercel.app/chatbot-embed");
+    const baseUrl =
+      import.meta.env.VITE_WIDGET_EMBED_URL || "https://aibotwizard.vercel.app";
+    const chatbotUrl = new URL(`${baseUrl}/chatbot-embed`);
     chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
     // Add a parameter to identify it's coming from widget for iframe communication
     chatbotUrl.searchParams.append("isWidget", "true");
@@ -362,7 +364,10 @@
     // Listen for messages from the iframe
     window.addEventListener("message", (event) => {
       // Verify origin for security
-      if (event.origin !== "https://aibotwizard.vercel.app") {
+      const baseUrl =
+        import.meta.env.VITE_WIDGET_EMBED_URL ||
+        "https://aibotwizard.vercel.app";
+      if (event.origin !== baseUrl) {
         return;
       }
 

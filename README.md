@@ -1,6 +1,20 @@
-# React + TypeScript + Vite
+# Chatbot Widget
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A customizable chatbot widget that can be embedded on any website. Built with React, TypeScript, and Vite.
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+VITE_WIDGET_EMBED_URL=https://your-domain.com
+```
+
+### Required Environment Variables
+
+- `VITE_WIDGET_EMBED_URL`: The base URL where your chatbot is hosted (defaults to `https://aibotwizard.vercel.app` if not set)
+
+## Development
 
 Currently, two official plugins are available:
 
