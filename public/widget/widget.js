@@ -9,11 +9,6 @@
     settings: null // will store chatbot settings
   };
 
-  // Environment detection and URL configuration
-  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const baseUrl = isDevelopment ? 'http://localhost:5174' : 'https://aibotwizard.vercel.app';
-  const apiBaseUrl = isDevelopment ? 'http://localhost:8000' : 'https://aibotwizard.vercel.app';
-
   // Color mapping for the theme
   const colorMap = {
     black: {
@@ -79,7 +74,7 @@
   // Fetch chatbot settings
   async function fetchSettings() {
     try {
-      const response = await fetch(`${apiBaseUrl}/api/chatbot/settings`, {
+      const response = await fetch('http://localhost:8000/api/chatbot/settings', {
         method: 'GET',
         headers: {
           'X-API-Key': widgetConfig.apiKey,
@@ -460,7 +455,7 @@
     iframe.className = 'chatbot-iframe';
 
     // Set the iframe source to load the chatbot with the apiKey parameter
-    const chatbotUrl = new URL(`${baseUrl}/chatbot-embed`);
+    const chatbotUrl = new URL('http://localhost:5174/chatbot-embed');
     chatbotUrl.searchParams.append('apiKey', widgetConfig.apiKey);
     chatbotUrl.searchParams.append('isWidget', 'true');
 
@@ -566,7 +561,7 @@
       }
 
       try {
-        const response = await fetch(`${apiBaseUrl}/api/instant-reply/`, {
+        const response = await fetch('http://localhost:8000/api/instant-reply/', {
           headers: {
             'X-API-Key': widgetConfig.apiKey
           }
@@ -626,7 +621,7 @@
     // Listen for messages from the iframe
     window.addEventListener('message', (event) => {
       // Verify origin for security
-      if (event.origin !== `${baseUrl}`) {
+      if (event.origin !== 'http://localhost:5174') {
         return;
       }
 

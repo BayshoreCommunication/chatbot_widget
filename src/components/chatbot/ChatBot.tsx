@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
-import { environment } from "../../config/environment";
 import ChatBody from "./ChatBody";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
@@ -58,7 +57,7 @@ interface ChatResponse {
 
 const ChatBot: React.FC<ChatBotProps> = ({
   apiKey,
-  customApiUrl = environment.API_CHATBOT_URL,
+  customApiUrl = import.meta.env.VITE_API_CHATBOT_URL,
   embedded = false,
   initiallyOpen = false,
   onToggleChat,
@@ -228,7 +227,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   ): Promise<ChatResponse> => {
     try {
       const response = await fetch(
-        `${environment.API_CHATBOT_HISTORY_URL}/${sessionId}`,
+        `${import.meta.env.VITE_API_CHATBOT_HISTORY_URL}/${sessionId}`,
         {
           method: "GET",
           headers: {
@@ -431,7 +430,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       videoAutoplay: settings?.video_autoplay,
       isNewUser,
       videoEnded,
-      showVideo,
+      showVideo
     });
 
     if (
@@ -647,20 +646,23 @@ const ChatBot: React.FC<ChatBotProps> = ({
     );
 
     // Create socket connection
-    const socketInstance = io(environment.SOCKET_URL, {
-      transports: ["websocket", "polling"],
-      timeout: 10000,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      auth: {
-        apiKey: apiKey,
-      },
-      query: {
-        apiKey: apiKey,
-      },
-      forceNew: true,
-    });
+    const socketInstance = io(
+      import.meta.env.VITE_SOCKET_URL || "http://localhost:8000",
+      {
+        transports: ["websocket", "polling"],
+        timeout: 10000,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        auth: {
+          apiKey: apiKey,
+        },
+        query: {
+          apiKey: apiKey,
+        },
+        forceNew: true,
+      }
+    );
 
     socketRef.current = socketInstance;
 
@@ -727,75 +729,25 @@ const ChatBot: React.FC<ChatBotProps> = ({
     socketInstance.on("new_message", (data) => {
       console.log("[WIDGET] New message received:", data);
 
-      // Process messages for this session
-      if (data.session_id === sessionId) {
-        console.log("[WIDGET] Processing message for current session");
+      // Only process messages for this session and from agents
+      if (
+        data.session_id === sessionId &&
+        data.message.role === "assistant" &&
+        data.message.agent_id
+      ) {
+        console.log("[WIDGET] Processing admin message for current session");
 
-        if (data.message.role === "user") {
-          // User message - add to messages if not already present
-          const userMessage: Message = {
-            id: `user_${Date.now()}_${Math.random()}`,
-            text: data.message.content,
-            sender: "user",
-            timestamp: new Date(data.message.timestamp),
-          };
+        const adminMessage: Message = {
+          id: `admin_${Date.now()}`,
+          text: data.message.content,
+          sender: "bot",
+          timestamp: new Date(data.message.timestamp),
+        };
 
-          setMessages((prev) => {
-            // Check if message already exists to avoid duplicates
-            const exists = prev.some(
-              (msg) =>
-                msg.sender === "user" &&
-                msg.text === data.message.content &&
-                Math.abs(
-                  new Date(msg.timestamp).getTime() -
-                    new Date(data.message.timestamp).getTime()
-                ) < 5000
-            );
+        setMessages((prev) => [...prev, adminMessage]);
 
-            if (!exists) {
-              return [...prev, userMessage];
-            }
-            return prev;
-          });
-
-          // Show typing animation for AI response
-          setIsTyping(true);
-        } else if (data.message.role === "assistant") {
-          // Assistant message (AI or Agent)
-          const assistantMessage: Message = {
-            id: `assistant_${Date.now()}_${Math.random()}`,
-            text: data.message.content,
-            sender: "bot",
-            timestamp: new Date(data.message.timestamp),
-          };
-
-          setMessages((prev) => {
-            // Check if message already exists to avoid duplicates
-            const exists = prev.some(
-              (msg) =>
-                msg.sender === "bot" &&
-                msg.text === data.message.content &&
-                Math.abs(
-                  new Date(msg.timestamp).getTime() -
-                    new Date(data.message.timestamp).getTime()
-                ) < 5000
-            );
-
-            if (!exists) {
-              return [...prev, assistantMessage];
-            }
-            return prev;
-          });
-
-          // Stop typing animation
-          setIsTyping(false);
-
-          // Check if this is an agent message
-          if (data.message.agent_id) {
-            setIsAgentMode(true);
-            setAgentId(data.message.agent_id);
-          }
-        }
+        // Stop typing animation if it's running
+        setIsTyping(false);
       }
     });
 
@@ -886,29 +838,33 @@ const ChatBot: React.FC<ChatBotProps> = ({
         setIsAgentMode(true);
       }
 
-      // Only add bot message if not in agent mode and we have an answer
-      // In agent mode, the message will come via Socket.IO
-      if (response.user_data && !isAgentMode && response.answer) {
+      if (response.user_data) {
         if (messages.length <= 1) {
           const historyMessages = convertToMessages(
             response.user_data.conversation_history
           );
           setMessages(historyMessages);
         } else {
-          // Normal AI response when not in agent mode
-          const botMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            text: response.answer,
-            sender: "bot",
-            timestamp: new Date(),
-          };
+          // Check if we're in agent mode and handle accordingly
+          if (isAgentMode) {
+            // If in agent mode, don't show any automatic message - agent will respond when ready
+            // Just store the user message and wait for agent response
+          } else {
+            // Normal AI response when not in agent mode
+            const botMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              text: response.answer,
+              sender: "bot",
+              timestamp: new Date(),
+            };
 
-          const appointmentSlots = parseAppointmentSlots(response.answer);
-          if (appointmentSlots) {
-            botMessage.appointmentSlots = appointmentSlots;
+            const appointmentSlots = parseAppointmentSlots(response.answer);
+            if (appointmentSlots) {
+              botMessage.appointmentSlots = appointmentSlots;
+            }
+
+            setMessages((prev) => [...prev, botMessage]);
           }
-
-          setMessages((prev) => [...prev, botMessage]);
         }
       }
     } catch (error) {
@@ -922,11 +878,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       setMessages((prev) => [...prev, errorMessage]);
       console.error("Error sending message:", error);
     } finally {
-      // Only stop typing if we're not in agent mode
-      // In agent mode, typing will be controlled by Socket.IO events
-      if (!isAgentMode) {
-        setIsTyping(false);
-      }
+      setIsTyping(false);
     }
   };
 
@@ -1169,7 +1121,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
                               src={
                                 settings.video_url?.startsWith("http")
                                   ? settings.video_url
-                                  : `${environment.API_BASE_URL}${settings.video_url}`
+                                  : `${import.meta.env.VITE_API_BASE_URL}${
+                                      settings.video_url
+                                    }`
                               }
                               type="video/mp4"
                             />

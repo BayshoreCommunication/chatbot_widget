@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import ChatBot from "../components/chatbot/ChatBot";
 import type { ChatbotSettings } from "../components/chatbot/types";
-import { environment } from "../config/environment";
 
 const ChatbotEmbedPage = () => {
   const [apiKey, setApiKey] = useState<string | undefined>(undefined);
@@ -15,7 +14,7 @@ const ChatbotEmbedPage = () => {
   const fetchSettings = useCallback(async (apiKey: string) => {
     try {
       const response = await fetch(
-        environment.API_CHATBOT_SETTINGS_URL,
+        import.meta.env.VITE_API_CHATBOT_SETTINGS_URL,
         {
           method: "GET",
           headers: {

@@ -1,16 +1,17 @@
 // Build script for creating the embeddable chat widget script
 
-import * as esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
+import * as esbuild from 'esbuild';
 
 // Get current file directory with ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Paths
-const srcPath = path.join(__dirname, '../src/widget/widget.ts');
+const srcPath = path.join(__dirname, '../public/widget/widget.js');
 const distPath = path.join(__dirname, '../public');
 const outPath = path.join(distPath, 'chatbot-widget.js');
 const minOutPath = path.join(distPath, 'chatbot-widget.min.js');
@@ -28,9 +29,6 @@ esbuild.buildSync({
   platform: 'browser',
   target: ['es2017'],
   format: 'iife',
-  define: {
-    'process.env.NODE_ENV': '"production"'
-  }
 });
 
 // Build with esbuild for production (minified)
@@ -42,9 +40,6 @@ esbuild.buildSync({
   target: ['es2017'],
   format: 'iife',
   minify: true,
-  define: {
-    'process.env.NODE_ENV': '"production"'
-  }
 });
 
 // File sizes for reporting
@@ -61,7 +56,7 @@ Output files:
 To embed the chatbot on your website, add the following script tag:
 
 <script 
-  src="${process.env.VITE_WIDGET_EMBED_URL || 'https://aibotwizard.vercel.app'}/chatbot-widget.min.js" 
+  src="${process.env.PUBLIC_URL || 'https://aibotwizard.vercel.app'}/chatbot-widget.min.js" 
   data-api-key="YOUR_API_KEY">
 </script>
 `); 
