@@ -647,23 +647,20 @@ const ChatBot: React.FC<ChatBotProps> = ({
     );
 
     // Create socket connection
-    const socketInstance = io(
-      import.meta.env.VITE_SOCKET_URL || "http://localhost:8000",
-      {
-        transports: ["websocket", "polling"],
-        timeout: 10000,
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        auth: {
-          apiKey: apiKey,
-        },
-        query: {
-          apiKey: apiKey,
-        },
-        forceNew: true,
-      }
-    );
+    const socketInstance = io(environment.SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      timeout: 10000,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      auth: {
+        apiKey: apiKey,
+      },
+      query: {
+        apiKey: apiKey,
+      },
+      forceNew: true,
+    });
 
     socketRef.current = socketInstance;
 
@@ -730,25 +727,75 @@ const ChatBot: React.FC<ChatBotProps> = ({
     socketInstance.on("new_message", (data) => {
       console.log("[WIDGET] New message received:", data);
 
-      // Only process messages for this session and from agents
-      if (
-        data.session_id === sessionId &&
-        data.message.role === "assistant" &&
-        data.message.agent_id
-      ) {
-        console.log("[WIDGET] Processing admin message for current session");
+      // Process messages for this session
+      if (data.session_id === sessionId) {
+        console.log("[WIDGET] Processing message for current session");
 
-        const adminMessage: Message = {
-          id: `admin_${Date.now()}`,
-          text: data.message.content,
-          sender: "bot",
-          timestamp: new Date(data.message.timestamp),
-        };
+        if (data.message.role === "user") {
+          // User message - add to messages if not already present
+          const userMessage: Message = {
+            id: `user_${Date.now()}_${Math.random()}`,
+            text: data.message.content,
+            sender: "user",
+            timestamp: new Date(data.message.timestamp),
+          };
 
-        setMessages((prev) => [...prev, adminMessage]);
+          setMessages((prev) => {
+            // Check if message already exists to avoid duplicates
+            const exists = prev.some(
+              (msg) =>
+                msg.sender === "user" &&
+                msg.text === data.message.content &&
+                Math.abs(
+                  new Date(msg.timestamp).getTime() -
+                    new Date(data.message.timestamp).getTime()
+                ) < 5000
+            );
 
-        // Stop typing animation if it's running
-        setIsTyping(false);
+            if (!exists) {
+              return [...prev, userMessage];
+            }
+            return prev;
+          });
+
+          // Show typing animation for AI response
+          setIsTyping(true);
+        } else if (data.message.role === "assistant") {
+          // Assistant message (AI or Agent)
+          const assistantMessage: Message = {
+            id: `assistant_${Date.now()}_${Math.random()}`,
+            text: data.message.content,
+            sender: "bot",
+            timestamp: new Date(data.message.timestamp),
+          };
+
+          setMessages((prev) => {
+            // Check if message already exists to avoid duplicates
+            const exists = prev.some(
+              (msg) =>
+                msg.sender === "bot" &&
+                msg.text === data.message.content &&
+                Math.abs(
+                  new Date(msg.timestamp).getTime() -
+                    new Date(data.message.timestamp).getTime()
+                ) < 5000
+            );
+
+            if (!exists) {
+              return [...prev, assistantMessage];
+            }
+            return prev;
+          });
+
+          // Stop typing animation
+          setIsTyping(false);
+
+          // Check if this is an agent message
+          if (data.message.agent_id) {
+            setIsAgentMode(true);
+            setAgentId(data.message.agent_id);
+          }
+        }
       }
     });
 
@@ -839,33 +886,29 @@ const ChatBot: React.FC<ChatBotProps> = ({
         setIsAgentMode(true);
       }
 
-      if (response.user_data) {
+      // Only add bot message if not in agent mode and we have an answer
+      // In agent mode, the message will come via Socket.IO
+      if (response.user_data && !isAgentMode && response.answer) {
         if (messages.length <= 1) {
           const historyMessages = convertToMessages(
             response.user_data.conversation_history
           );
           setMessages(historyMessages);
         } else {
-          // Check if we're in agent mode and handle accordingly
-          if (isAgentMode) {
-            // If in agent mode, don't show any automatic message - agent will respond when ready
-            // Just store the user message and wait for agent response
-          } else {
-            // Normal AI response when not in agent mode
-            const botMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              text: response.answer,
-              sender: "bot",
-              timestamp: new Date(),
-            };
+          // Normal AI response when not in agent mode
+          const botMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: response.answer,
+            sender: "bot",
+            timestamp: new Date(),
+          };
 
-            const appointmentSlots = parseAppointmentSlots(response.answer);
-            if (appointmentSlots) {
-              botMessage.appointmentSlots = appointmentSlots;
-            }
-
-            setMessages((prev) => [...prev, botMessage]);
+          const appointmentSlots = parseAppointmentSlots(response.answer);
+          if (appointmentSlots) {
+            botMessage.appointmentSlots = appointmentSlots;
           }
+
+          setMessages((prev) => [...prev, botMessage]);
         }
       }
     } catch (error) {
@@ -879,7 +922,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
       setMessages((prev) => [...prev, errorMessage]);
       console.error("Error sending message:", error);
     } finally {
-      setIsTyping(false);
+      // Only stop typing if we're not in agent mode
+      // In agent mode, typing will be controlled by Socket.IO events
+      if (!isAgentMode) {
+        setIsTyping(false);
+      }
     }
   };
 
