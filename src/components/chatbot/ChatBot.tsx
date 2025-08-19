@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
+import { environment } from "../../config/environment";
 import ChatBody from "./ChatBody";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
@@ -57,7 +58,7 @@ interface ChatResponse {
 
 const ChatBot: React.FC<ChatBotProps> = ({
   apiKey,
-  customApiUrl = import.meta.env.VITE_API_CHATBOT_URL,
+  customApiUrl = environment.API_CHATBOT_URL,
   embedded = false,
   initiallyOpen = false,
   onToggleChat,
@@ -227,7 +228,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   ): Promise<ChatResponse> => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_CHATBOT_HISTORY_URL}/${sessionId}`,
+        `${environment.API_CHATBOT_HISTORY_URL}/${sessionId}`,
         {
           method: "GET",
           headers: {
@@ -430,7 +431,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       videoAutoplay: settings?.video_autoplay,
       isNewUser,
       videoEnded,
-      showVideo
+      showVideo,
     });
 
     if (
@@ -1121,9 +1122,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                               src={
                                 settings.video_url?.startsWith("http")
                                   ? settings.video_url
-                                  : `${import.meta.env.VITE_API_BASE_URL}${
-                                      settings.video_url
-                                    }`
+                                  : `${environment.API_BASE_URL}${settings.video_url}`
                               }
                               type="video/mp4"
                             />
