@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5174",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run build:widget",
     "build:widget": "node scripts/build-widget.js",
     "test:widget": "npm run build:widget && node scripts/serve-test.js",
     "serve:test": "node scripts/serve-test.js",
+    "test:deployment": "node scripts/test-deployment.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "framer-motion": "^10.16.4",

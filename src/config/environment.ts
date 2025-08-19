@@ -10,5 +10,9 @@ export const environment = {
   API_BASE_URL: import.meta.env.VITE_API_BASE_URL || "https://aibotwizard.vercel.app",
   
   // Socket.IO URL for real-time messaging
-  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || "http://localhost:8000",
+  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || "https://aibotwizard.vercel.app",
+  
+  // Widget specific URLs
+  WIDGET_CHATBOT_URL: import.meta.env.VITE_WIDGET_CHATBOT_URL || "https://aibotwizard.vercel.app/chatbot-embed",
+  WIDGET_INSTANT_REPLY_URL: import.meta.env.VITE_WIDGET_INSTANT_REPLY_URL || "https://aibotwizard.vercel.app/api/instant-reply",
 };

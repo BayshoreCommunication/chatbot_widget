@@ -8,6 +8,10 @@
     position: "bottom-right", // default position
   };
 
+  // Environment detection and URL configuration
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const baseUrl = isDevelopment ? 'http://localhost:5174' : 'https://aibotwizard.vercel.app';
+
   // Parse script attributes or URL parameters
   function parseConfig() {
     // Get the script tag that loaded this widget
@@ -277,7 +281,6 @@
     iframe.className = "chatbot-iframe";
 
     // Set the iframe source to load the chatbot with the apiKey parameter
-    const baseUrl = "https://aibotwizard.vercel.app"; // Default fallback
     const chatbotUrl = new URL(`${baseUrl}/chatbot-embed`);
     chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
     // Add a parameter to identify it's coming from widget for iframe communication
@@ -363,7 +366,6 @@
     // Listen for messages from the iframe
     window.addEventListener("message", (event) => {
       // Verify origin for security
-      const baseUrl = "https://aibotwizard.vercel.app"; // Default fallback
       if (event.origin !== baseUrl) {
         return;
       }
