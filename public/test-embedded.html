@@ -1,272 +1,301 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat Widget Embedded Test</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
 
-        .test-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+      .test-section {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
 
-        .embedded-container {
-            width: 100%;
-            height: 600px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-            background: white;
-            position: relative;
-        }
+      .embedded-container {
+        width: 100%;
+        height: 600px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: white;
+        position: relative;
+      }
 
-        .controls {
-            margin: 20px 0;
-        }
+      .controls {
+        margin: 20px 0;
+      }
 
-        .controls button {
-            margin: 5px;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            background-color: #4f46e5;
-            color: white;
-            cursor: pointer;
-        }
+      .controls button {
+        margin: 5px;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        background-color: #4f46e5;
+        color: white;
+        cursor: pointer;
+      }
 
-        .debug {
-            background-color: #f8fafc;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-family: monospace;
-            font-size: 12px;
-            border: 1px solid #e2e8f0;
-            max-height: 200px;
-            overflow-y: auto;
-        }
+      .debug {
+        background-color: #f8fafc;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+        border: 1px solid #e2e8f0;
+        max-height: 200px;
+        overflow-y: auto;
+      }
 
-        .success {
-            color: #059669;
-        }
+      .success {
+        color: #059669;
+      }
 
-        .error {
-            color: #dc2626;
-        }
+      .error {
+        color: #dc2626;
+      }
 
-        .info {
-            color: #2563eb;
-        }
+      .info {
+        color: #2563eb;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="container">
-        <div class="test-section">
-            <h2>Embedded Chat Widget Test</h2>
-            <p>Testing the embedded chat widget with instant replies.</p>
+      <div class="test-section">
+        <h2>Embedded Chat Widget Test</h2>
+        <p>Testing the embedded chat widget with instant replies.</p>
 
-            <div class="controls">
-                <button onclick="testWidgetLoaded()">Check Widget</button>
-                <button onclick="testAPIConnection()">Test API</button>
-                <button onclick="testInstantReplies()">Test Instant Replies</button>
-                <button onclick="testAdminTakeover()">Test Admin Takeover</button>
-                <button onclick="testAdminMessage()">Send Admin Message</button>
-                <button onclick="clearDebug()">Clear Debug</button>
-            </div>
-
-            <div id="debug-log" class="debug">
-                <div class="info">[System] Test page loaded at: <span id="load-time"></span></div>
-            </div>
-
-            <div class="embedded-container">
-                <!-- Embedded widget will be loaded here -->
-            </div>
+        <div class="controls">
+          <button onclick="testWidgetLoaded()">Check Widget</button>
+          <button onclick="testAPIConnection()">Test API</button>
+          <button onclick="testInstantReplies()">Test Instant Replies</button>
+          <button onclick="testAdminTakeover()">Test Admin Takeover</button>
+          <button onclick="testAdminMessage()">Send Admin Message</button>
+          <button onclick="clearDebug()">Clear Debug</button>
         </div>
+
+        <div id="debug-log" class="debug">
+          <div class="info">
+            [System] Test page loaded at: <span id="load-time"></span>
+          </div>
+        </div>
+
+        <div class="embedded-container">
+          <!-- Embedded widget will be loaded here -->
+        </div>
+      </div>
     </div>
 
     <script>
-        // Set load time
-        document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
+      // Set load time
+      document.getElementById("load-time").textContent =
+        new Date().toLocaleTimeString();
 
-        function log(message, type = 'info') {
-            const debugEl = document.getElementById('debug-log');
-            const timestamp = new Date().toLocaleTimeString();
-            debugEl.innerHTML = `<div class="${type}">[${timestamp}] ${message}</div>` + debugEl.innerHTML;
-            console.log(`[EMBEDDED TEST] ${message}`);
+      function log(message, type = "info") {
+        const debugEl = document.getElementById("debug-log");
+        const timestamp = new Date().toLocaleTimeString();
+        debugEl.innerHTML =
+          `<div class="${type}">[${timestamp}] ${message}</div>` +
+          debugEl.innerHTML;
+        console.log(`[EMBEDDED TEST] ${message}`);
+      }
+
+      function clearDebug() {
+        const debugEl = document.getElementById("debug-log");
+        debugEl.innerHTML =
+          '<div class="info">[System] Debug log cleared</div>';
+      }
+
+      function testWidgetLoaded() {
+        const container = document.querySelector(
+          ".embedded-container .chatbot-widget-container"
+        );
+        const iframe = document.querySelector(
+          ".embedded-container .chatbot-iframe"
+        );
+
+        if (container && iframe) {
+          log("✅ Widget and iframe found and properly embedded", "success");
+
+          // Test Socket.IO connection status
+          iframe.contentWindow.postMessage({ type: "getSocketStatus" }, "*");
+        } else {
+          log("❌ Widget or iframe not found", "error");
         }
+      }
 
-        function clearDebug() {
-            const debugEl = document.getElementById('debug-log');
-            debugEl.innerHTML = '<div class="info">[System] Debug log cleared</div>';
+      function testAPIConnection() {
+        const iframe = document.querySelector(
+          ".embedded-container .chatbot-iframe"
+        );
+        if (iframe) {
+          log("📡 Testing API connection...", "info");
+          iframe.contentWindow.postMessage({ type: "testConnection" }, "*");
+        } else {
+          log("❌ Iframe not found", "error");
         }
+      }
 
-        function testWidgetLoaded() {
-            const container = document.querySelector('.embedded-container .chatbot-widget-container');
-            const iframe = document.querySelector('.embedded-container .chatbot-iframe');
+      function testInstantReplies() {
+        const iframe = document.querySelector(
+          ".embedded-container .chatbot-iframe"
+        );
+        if (iframe) {
+          log("🔄 Testing instant replies...", "info");
+          iframe.contentWindow.postMessage({ type: "testInstantReplies" }, "*");
+        } else {
+          log("❌ Iframe not found", "error");
+        }
+      }
 
-            if (container && iframe) {
-                log('✅ Widget and iframe found and properly embedded', 'success');
+      function testAdminTakeover() {
+        // Implementation for testing admin takeover
+        log("🔄 Testing admin takeover...", "info");
 
-                // Test Socket.IO connection status
-                iframe.contentWindow.postMessage({ type: 'getSocketStatus' }, '*');
+        // Get a session ID from the widget iframe (we'll use a test session)
+        const testSessionId = "test_session_" + Date.now();
+
+        // Call the admin takeover API
+        fetch(
+          "https://api.bayshorecommunication.org/api/chatbot/agent-takeover",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-API-Key": "org_sk_4d76d9a9c4d342d72ee0540c71932bed",
+            },
+            body: JSON.stringify({
+              session_id: testSessionId,
+              agent_id: "test_admin",
+            }),
+          }
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              log("✅ Admin takeover successful", "success");
             } else {
-                log('❌ Widget or iframe not found', 'error');
+              log("❌ Admin takeover failed: " + data.message, "error");
             }
-        }
+          })
+          .catch((error) => {
+            log("❌ Admin takeover error: " + error.message, "error");
+          });
+      }
 
-        function testAPIConnection() {
-            const iframe = document.querySelector('.embedded-container .chatbot-iframe');
-            if (iframe) {
-                log('📡 Testing API connection...', 'info');
-                iframe.contentWindow.postMessage({ type: 'testConnection' }, '*');
-            } else {
-                log('❌ Iframe not found', 'error');
-            }
-        }
+      function testAdminMessage() {
+        // Implementation for sending an admin message
+        log("📝 Sending admin message...", "info");
 
-        function testInstantReplies() {
-            const iframe = document.querySelector('.embedded-container .chatbot-iframe');
-            if (iframe) {
-                log('🔄 Testing instant replies...', 'info');
-                iframe.contentWindow.postMessage({ type: 'testInstantReplies' }, '*');
-            } else {
-                log('❌ Iframe not found', 'error');
-            }
-        }
+        const testSessionId = "test_session_" + Date.now();
+        const testMessage =
+          "Hello! This is a test message from an admin agent.";
 
-        function testAdminTakeover() {
-            // Implementation for testing admin takeover
-            log('🔄 Testing admin takeover...', 'info');
+        // First, take over the chat
+        fetch("https://api.bayshorecommunication.org/api/chatbot/agent-takeover", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": "org_sk_4d76d9a9c4d342d72ee0540c71932bed",
+          },
+          body: JSON.stringify({
+            session_id: testSessionId,
+            agent_id: "test_admin",
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              log("✅ Chat taken over, sending admin message...", "info");
 
-            // Get a session ID from the widget iframe (we'll use a test session)
-            const testSessionId = 'test_session_' + Date.now();
-
-            // Call the admin takeover API
-            fetch('http://localhost:8000/api/chatbot/agent-takeover', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': 'org_sk_4d76d9a9c4d342d72ee0540c71932bed'
-                },
-                body: JSON.stringify({
+              // Now send the admin message
+              return fetch(
+                "https://api.bayshorecommunication.org/api/chatbot/send-agent-message",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-API-Key": "org_sk_4d76d9a9c4d342d72ee0540c71932bed",
+                  },
+                  body: JSON.stringify({
                     session_id: testSessionId,
-                    agent_id: 'test_admin'
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        log('✅ Admin takeover successful', 'success');
-                    } else {
-                        log('❌ Admin takeover failed: ' + data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    log('❌ Admin takeover error: ' + error.message, 'error');
-                });
-        }
-
-        function testAdminMessage() {
-            // Implementation for sending an admin message
-            log('📝 Sending admin message...', 'info');
-
-            const testSessionId = 'test_session_' + Date.now();
-            const testMessage = 'Hello! This is a test message from an admin agent.';
-
-            // First, take over the chat
-            fetch('http://localhost:8000/api/chatbot/agent-takeover', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': 'org_sk_4d76d9a9c4d342d72ee0540c71932bed'
-                },
-                body: JSON.stringify({
-                    session_id: testSessionId,
-                    agent_id: 'test_admin'
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        log('✅ Chat taken over, sending admin message...', 'info');
-
-                        // Now send the admin message
-                        return fetch('http://localhost:8000/api/chatbot/send-agent-message', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-API-Key': 'org_sk_4d76d9a9c4d342d72ee0540c71932bed'
-                            },
-                            body: JSON.stringify({
-                                session_id: testSessionId,
-                                message: testMessage,
-                                agent_id: 'test_admin'
-                            })
-                        });
-                    } else {
-                        throw new Error(data.message);
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        log('✅ Admin message sent successfully', 'success');
-                    } else {
-                        log('❌ Admin message failed: ' + data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    log('❌ Admin message error: ' + error.message, 'error');
-                });
-        }
-
-        // Listen for messages from iframe
-        window.addEventListener('message', function (event) {
-            if (event.data.type === 'connectionTest') {
-                log(`✅ API Connection successful: ${event.data.message}`, 'success');
-            } else if (event.data.type === 'instantReplies') {
-                log(`📝 Instant Replies: ${JSON.stringify(event.data.messages)}`, 'info');
-            } else if (event.data.type === 'socketStatus') {
-                if (event.data.connected) {
-                    log(`🟢 Socket.IO connected successfully`, 'success');
-                } else {
-                    log(`🔴 Socket.IO not connected`, 'error');
+                    message: testMessage,
+                    agent_id: "test_admin",
+                  }),
                 }
-            } else if (event.data.type === 'agentTakeover') {
-                log(`👤 Agent takeover detected: ${JSON.stringify(event.data)}`, 'info');
-            } else if (event.data.type === 'adminMessage') {
-                log(`💬 Admin message received: ${event.data.message}`, 'info');
+              );
+            } else {
+              throw new Error(data.message);
             }
-        });
+          })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              log("✅ Admin message sent successfully", "success");
+            } else {
+              log("❌ Admin message failed: " + data.message, "error");
+            }
+          })
+          .catch((error) => {
+            log("❌ Admin message error: " + error.message, "error");
+          });
+      }
 
-        // Initialize widget
-        window.addEventListener('load', function () {
-            log('🚀 Page loaded, initializing embedded widget...', 'info');
-        });
+      // Listen for messages from iframe
+      window.addEventListener("message", function (event) {
+        if (event.data.type === "connectionTest") {
+          log(`✅ API Connection successful: ${event.data.message}`, "success");
+        } else if (event.data.type === "instantReplies") {
+          log(
+            `📝 Instant Replies: ${JSON.stringify(event.data.messages)}`,
+            "info"
+          );
+        } else if (event.data.type === "socketStatus") {
+          if (event.data.connected) {
+            log(`🟢 Socket.IO connected successfully`, "success");
+          } else {
+            log(`🔴 Socket.IO not connected`, "error");
+          }
+        } else if (event.data.type === "agentTakeover") {
+          log(
+            `👤 Agent takeover detected: ${JSON.stringify(event.data)}`,
+            "info"
+          );
+        } else if (event.data.type === "adminMessage") {
+          log(`💬 Admin message received: ${event.data.message}`, "info");
+        }
+      });
+
+      // Initialize widget
+      window.addEventListener("load", function () {
+        log("🚀 Page loaded, initializing embedded widget...", "info");
+      });
     </script>
 
     <!-- Embedded Widget -->
-    <script src="./chatbot-widget.js" data-api-key="org_sk_4d76d9a9c4d342d72ee0540c71932bed" data-embedded="true"
-        async></script>
-</body>
-
+    <script
+      src="./chatbot-widget.js"
+      data-api-key="org_sk_4d76d9a9c4d342d72ee0540c71932bed"
+      data-embedded="true"
+      async
+    ></script>
+  </body>
 </html>
