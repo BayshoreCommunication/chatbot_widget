@@ -3,6 +3,18 @@ import { useCallback, useEffect, useState } from "react";
 import ChatBot from "../components/chatbot/ChatBot";
 import type { ChatbotSettings } from "../components/chatbot/types";
 
+// Helper function to check if auto_open is enabled
+const isAutoOpenEnabled = (settings: ChatbotSettings | null): boolean => {
+  if (!settings) return false;
+
+  const autoOpen = settings.auto_open;
+  if (typeof autoOpen === "boolean") return autoOpen;
+  if (typeof autoOpen === "string") return autoOpen.toLowerCase() === "true";
+  if (typeof autoOpen === "number") return autoOpen === 1;
+
+  return false;
+};
+
 const ChatbotEmbedPage = () => {
   const [apiKey, setApiKey] = useState<string | undefined>(undefined);
   const [isWidget, setIsWidget] = useState<boolean>(false);
@@ -13,16 +25,16 @@ const ChatbotEmbedPage = () => {
   // Fetch chatbot settings
   const fetchSettings = useCallback(async (apiKey: string) => {
     try {
-      const response = await fetch(
-        import.meta.env.VITE_API_CHATBOT_SETTINGS_URL,
-        {
-          method: "GET",
-          headers: {
-            "X-API-Key": apiKey,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const apiUrl =
+        import.meta.env.VITE_API_CHATBOT_SETTINGS_URL ||
+        "https://api.bayshorecommunication.org/api/chatbot/settings";
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "X-API-Key": apiKey,
+          "Content-Type": "application/json",
+        },
+      });
 
       const data = await response.json();
       console.log("Settings response:", data);
@@ -88,25 +100,14 @@ const ChatbotEmbedPage = () => {
             <ChatBot
               key={
                 settings
-                  ? settings?.auto_open === true ||
-                    (typeof settings?.auto_open === "string" &&
-                      settings?.auto_open.toLowerCase() === "true") ||
-                    (settings as any)?.auto_open === 1 ||
-                    (settings as any)?.auto_open === "1"
+                  ? isAutoOpenEnabled(settings)
                     ? "chatbot-open"
                     : "chatbot-closed"
                   : "chatbot-loading"
               }
               apiKey={apiKey}
               embedded={true}
-              initiallyOpen={
-                // Coerce possible string/number values to boolean
-                settings?.auto_open === true ||
-                (typeof settings?.auto_open === "string" &&
-                  settings?.auto_open.toLowerCase() === "true") ||
-                (settings as any)?.auto_open === 1 ||
-                (settings as any)?.auto_open === "1"
-              }
+              initiallyOpen={isAutoOpenEnabled(settings)}
               onToggleChat={handleToggleChat}
               settings={settings}
             />

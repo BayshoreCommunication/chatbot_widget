@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatbot Widget Local Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .test-info {
+        background: #e8f4fd;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+      }
+      .test-info h3 {
+        margin-top: 0;
+        color: #0066cc;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .status.info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🤖 Chatbot Widget Local Test</h1>
+
+      <div class="test-info">
+        <h3>Test Configuration</h3>
+        <p>
+          <strong>Widget URL:</strong>
+          <code>http://localhost:5175/chatbot-widget.min.js</code>
+        </p>
+        <p><strong>Backend API:</strong> <code>https://api.bayshorecommunication.org</code></p>
+        <p>
+          <strong>API Key:</strong>
+          <code>org_sk_dfa12d518116dbe59240794fe05d8541</code>
+        </p>
+      </div>
+
+      <div id="status-container">
+        <div class="status info">🔄 Testing connections...</div>
+      </div>
+
+      <div style="margin-top: 40px">
+        <h3>Test Instructions:</h3>
+        <ol>
+          <li>
+            Check that both backend (port 8000) and widget (port 5175) are
+            running
+          </li>
+          <li>Look for the chatbot widget in the bottom-right corner</li>
+          <li>Click on the widget to open the chat interface</li>
+          <li>Try sending a message to test the conversation</li>
+          <li>Check browser console for any errors</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Chatbot Widget Script -->
+    <script>
+      // Set up global variables for the widget
+      window.CHATBOT_API_URL = "https://api.bayshorecommunication.org";
+      window.CHATBOT_WIDGET_URL = "http://localhost:5175";
+
+      // Test connections
+      async function testConnections() {
+        const statusContainer = document.getElementById("status-container");
+
+        // Test backend connection
+        try {
+          const response = await fetch(
+            "https://api.bayshorecommunication.org/api/chatbot/settings",
+            {
+              headers: {
+                "X-API-Key": "org_sk_dfa12d518116dbe59240794fe05d8541",
+              },
+            }
+          );
+
+          if (response.ok) {
+            statusContainer.innerHTML =
+              '<div class="status success">✅ Backend API is accessible</div>';
+          } else {
+            statusContainer.innerHTML =
+              '<div class="status error">❌ Backend API returned error: ' +
+              response.status +
+              "</div>";
+          }
+        } catch (error) {
+          statusContainer.innerHTML =
+            '<div class="status error">❌ Backend API connection failed: ' +
+            error.message +
+            "</div>";
+        }
+
+        // Test widget connection
+        try {
+          const widgetResponse = await fetch("http://localhost:5175");
+          if (widgetResponse.ok) {
+            statusContainer.innerHTML +=
+              '<div class="status success">✅ Widget server is accessible</div>';
+          } else {
+            statusContainer.innerHTML +=
+              '<div class="status error">❌ Widget server returned error: ' +
+              widgetResponse.status +
+              "</div>";
+          }
+        } catch (error) {
+          statusContainer.innerHTML +=
+            '<div class="status error">❌ Widget server connection failed: ' +
+            error.message +
+            "</div>";
+        }
+      }
+
+      // Run tests when page loads
+      testConnections();
+    </script>
+
+    <script
+      src="http://localhost:5175/chatbot-widget.min.js"
+      data-api-key="org_sk_dfa12d518116dbe59240794fe05d8541"
+      async
+    ></script>
+  </body>
+</html>

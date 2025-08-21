@@ -32,7 +32,7 @@ export interface ChatApiConfig {
 const DEFAULT_CONFIG: ChatApiConfig = {
   apiUrl:
     import.meta.env.VITE_API_CHATBOT_URL ||
-    "http://localhost:8000/api/chatbot/ask",
+    "https://api.bayshorecommunication.org/api/chatbot/ask",
   apiKey:
     import.meta.env.VITE_DEFAULT_API_KEY ||
     "org_sk_4d76d9a9c4d342d72ee0540c71932bed",
@@ -50,7 +50,10 @@ export class ChatApi {
     try {
       // Use the direct history endpoint
       const response = await fetch(
-        `${import.meta.env.VITE_API_CHATBOT_HISTORY_URL || 'http://localhost:8000/api/chatbot/history'}/${sessionId}`,
+        `${
+          import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
+          "https://api.bayshorecommunication.org/api/chatbot/history"
+        }/${sessionId}`,
         {
           method: "GET",
           headers: {
