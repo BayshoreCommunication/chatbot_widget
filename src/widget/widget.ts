@@ -276,8 +276,10 @@
     const iframe = document.createElement("iframe");
     iframe.className = "chatbot-iframe";
 
-    // Set the iframe source to load the chatbot with the apiKey parameter
-    const chatbotUrl = new URL("https://aibotwizard.vercel.app/chatbot-embed");
+    // Set the iframe source to load the chatbot with the apiKey paramete
+    const chatbotUrl = new URL(
+      "https://aibotwidget.bayshorecommunication.org/chatbot-embed"
+    );
     chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
     // Add a parameter to identify it's coming from widget for iframe communication
     chatbotUrl.searchParams.append("isWidget", "true");
@@ -362,7 +364,7 @@
     // Listen for messages from the iframe
     window.addEventListener("message", (event) => {
       // Verify origin for security
-      if (event.origin !== "https://aibotwizard.vercel.app") {
+      if (event.origin !== "https://aibotwidget.bayshorecommunication.org") {
         return;
       }
 
