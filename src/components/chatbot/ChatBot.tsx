@@ -648,11 +648,15 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
     // Create socket connection
     const socketInstance = io(
+<<<<<<< HEAD
       import.meta.env.VITE_SOCKET_URL ||
         (window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1"
           ? "http://localhost:8000"
           : "https://api.bayshorecommunication.org"),
+=======
+              import.meta.env.VITE_SOCKET_URL || "https://api.bayshorecommunication.org",
+>>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
       {
         transports: ["websocket", "polling"],
         timeout: 10000,

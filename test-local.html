@@ -66,7 +66,11 @@
           <strong>Widget URL:</strong>
           <code>http://localhost:5175/chatbot-widget.min.js</code>
         </p>
+<<<<<<< HEAD
         <p><strong>Backend API:</strong> <code>http://localhost:8000</code></p>
+=======
+        <p><strong>Backend API:</strong> <code>https://api.bayshorecommunication.org</code></p>
+>>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
         <p>
           <strong>API Key:</strong>
           <code>org_sk_dfa12d518116dbe59240794fe05d8541</code>
@@ -95,7 +99,11 @@
     <!-- Chatbot Widget Script -->
     <script>
       // Set up global variables for the widget
+<<<<<<< HEAD
       window.CHATBOT_API_URL = "http://localhost:8000";
+=======
+      window.CHATBOT_API_URL = "https://api.bayshorecommunication.org";
+>>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
       window.CHATBOT_WIDGET_URL = "http://localhost:5175";
 
       // Test connections
@@ -105,7 +113,11 @@
         // Test backend connection
         try {
           const response = await fetch(
+<<<<<<< HEAD
             "http://localhost:8000/api/chatbot/settings",
+=======
+            "https://api.bayshorecommunication.org/api/chatbot/settings",
+>>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
             {
               headers: {
                 "X-API-Key": "org_sk_dfa12d518116dbe59240794fe05d8541",
