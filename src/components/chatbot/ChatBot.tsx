@@ -196,11 +196,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     setTimeout(() => {
       const welcomeMessage: Message = {
         id: `video_welcome_${Date.now()}`,
-        text:
-          "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
-          "• Scheduling appointments\n" +
-          "• Answering questions about our services\n" +
-          "• Providing information and support",
+        text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
         sender: "bot",
         timestamp: new Date(),
       };
@@ -226,16 +222,19 @@ const ChatBot: React.FC<ChatBotProps> = ({
     sessionId: string
   ): Promise<ChatResponse> => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_CHATBOT_HISTORY_URL}/${sessionId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
-          },
-        }
-      );
+      const historyBase =
+        import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
+        (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:8000/api/chatbot/history"
+          : "https://api.bayshorecommunication.org/api/chatbot/history");
+      const response = await fetch(`${historyBase}/${sessionId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
@@ -253,7 +252,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
     sessionId: string
   ): Promise<ChatResponse> => {
     try {
-      const response = await fetch(customApiUrl, {
+      const apiUrl =
+        customApiUrl ||
+        (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:8000/api/chatbot/ask"
+          : "https://api.bayshorecommunication.org/api/chatbot/ask");
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -285,7 +290,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
     try {
       const message = `I want to confirm my appointment for ${request.day} at ${request.time} (ID: ${request.slotId})`;
 
-      const response = await fetch(customApiUrl, {
+      const apiUrl =
+        customApiUrl ||
+        (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:8000/api/chatbot/ask"
+          : "https://api.bayshorecommunication.org/api/chatbot/ask");
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -403,8 +414,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
       initiallyOpen === true ||
       (typeof initiallyOpen === "string" &&
         initiallyOpen.toLowerCase() === "true") ||
-      (initiallyOpen as any) === 1 ||
-      (initiallyOpen as any) === "1";
+      initiallyOpen === 1 ||
+      initiallyOpen === "1";
     if (shouldOpen && !isOpen) {
       setIsOpen(true);
     }
@@ -430,7 +441,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       videoAutoplay: settings?.video_autoplay,
       isNewUser,
       videoEnded,
-      showVideo
+      showVideo,
     });
 
     if (
@@ -467,16 +478,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
         // Add initial welcome message
         const welcomeMessage: Message = {
           id: Date.now().toString(),
-          text:
-            "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
-            "• Scheduling appointments\n" +
-            "• Answering questions about our services\n" +
-            "• Providing information and support",
+          text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
           sender: "bot",
           timestamp: new Date(),
         };
         setMessages([welcomeMessage]);
         setIsTyping(false);
+        setHistoryFetched(true);
         return;
       }
 
@@ -523,11 +531,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
             // Add welcome message for empty history
             const welcomeMessage: Message = {
               id: Date.now().toString(),
-              text:
-                "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
-                "• Scheduling appointments\n" +
-                "• Answering questions about our services\n" +
-                "• Providing information and support",
+              text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
               sender: "bot",
               timestamp: new Date(),
             };
@@ -539,11 +543,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
           // Add welcome message when no user data
           const welcomeMessage: Message = {
             id: Date.now().toString(),
-            text:
-              "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
-              "• Scheduling appointments\n" +
-              "• Answering questions about our services\n" +
-              "• Providing information and support",
+            text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
             sender: "bot",
             timestamp: new Date(),
           };
@@ -553,14 +553,15 @@ const ChatBot: React.FC<ChatBotProps> = ({
         }
       } catch (error) {
         console.error("Error fetching conversation history:", error);
+        // Check if it's a 404 error (session not found) - this is normal for new sessions
+        if (error instanceof Error && error.message.includes("404")) {
+          console.log("Session not found - this is normal for new users");
+        }
+
         // Add welcome message on error
         const welcomeMessage: Message = {
           id: Date.now().toString(),
-          text:
-            "👋 Welcome! I'm your AI assistant. I can help you with:\n\n" +
-            "• Scheduling appointments\n" +
-            "• Answering questions about our services\n" +
-            "• Providing information and support",
+          text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
           sender: "bot",
           timestamp: new Date(),
         };
@@ -647,7 +648,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
     // Create socket connection
     const socketInstance = io(
-      import.meta.env.VITE_SOCKET_URL || "http://localhost:8000",
+      import.meta.env.VITE_SOCKET_URL ||
+        (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:8000"
+          : "https://api.bayshorecommunication.org"),
       {
         transports: ["websocket", "polling"],
         timeout: 10000,

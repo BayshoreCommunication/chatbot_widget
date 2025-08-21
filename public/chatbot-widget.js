@@ -58,7 +58,8 @@
     }
     async function fetchSettings() {
       try {
-        const response = await fetch("http://localhost:8000/api/chatbot/settings", {
+        const apiUrl = window.CHATBOT_API_URL || "http://localhost:8000";
+        const response = await fetch(`${apiUrl}/api/chatbot/settings`, {
           method: "GET",
           headers: {
             "X-API-Key": widgetConfig.apiKey,
@@ -421,7 +422,8 @@
       let instantReplyLoopRunning = false;
       const iframe = document.createElement("iframe");
       iframe.className = "chatbot-iframe";
-      const chatbotUrl = new URL("http://localhost:5174/chatbot-embed");
+      const widgetUrl = window.CHATBOT_WIDGET_URL || "http://localhost:5174";
+      const chatbotUrl = new URL(`${widgetUrl}/chatbot-embed`);
       chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
       chatbotUrl.searchParams.append("isWidget", "true");
       if ((_c = widgetConfig.settings) == null ? void 0 : _c.leadCapture) {
@@ -521,7 +523,8 @@
         }
       }
       window.addEventListener("message", (event) => {
-        if (event.origin !== "http://localhost:5174") {
+        const widgetUrl2 = window.CHATBOT_WIDGET_URL || "http://localhost:5174";
+        if (event.origin !== widgetUrl2) {
           return;
         }
         if (event.data === "closeChatbot") {
