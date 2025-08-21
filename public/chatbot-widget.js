@@ -58,11 +58,7 @@
     }
     async function fetchSettings() {
       try {
-<<<<<<< HEAD
-        const apiUrl = window.CHATBOT_API_URL || "http://localhost:8000";
-=======
         const apiUrl = window.CHATBOT_API_URL || "https://api.bayshorecommunication.org";
->>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
         const response = await fetch(`${apiUrl}/api/chatbot/settings`, {
           method: "GET",
           headers: {
