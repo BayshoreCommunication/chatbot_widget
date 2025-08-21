@@ -25,20 +25,9 @@ const ChatbotEmbedPage = () => {
   // Fetch chatbot settings
   const fetchSettings = useCallback(async (apiKey: string) => {
     try {
-<<<<<<< HEAD
-      // Prefer env override; otherwise choose production or localhost based on origin
-      const defaultSettingsUrl =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-          ? "http://localhost:8000/api/chatbot/settings"
-          : "https://api.bayshorecommunication.org/api/chatbot/settings";
-      const apiUrl =
-        import.meta.env.VITE_API_CHATBOT_SETTINGS_URL || defaultSettingsUrl;
-=======
       const apiUrl =
         import.meta.env.VITE_API_CHATBOT_SETTINGS_URL ||
         "https://api.bayshorecommunication.org/api/chatbot/settings";
->>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
       const response = await fetch(apiUrl, {
         method: "GET",
         headers: {

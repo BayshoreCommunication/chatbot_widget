@@ -224,10 +224,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     try {
       const historyBase =
         import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
-        (window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-          ? "http://localhost:8000/api/chatbot/history"
-          : "https://api.bayshorecommunication.org/api/chatbot/history");
+        "https://api.bayshorecommunication.org/api/chatbot/history";
       const response = await fetch(`${historyBase}/${sessionId}`, {
         method: "GET",
         headers: {
@@ -253,11 +250,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   ): Promise<ChatResponse> => {
     try {
       const apiUrl =
-        customApiUrl ||
-        (window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-          ? "http://localhost:8000/api/chatbot/ask"
-          : "https://api.bayshorecommunication.org/api/chatbot/ask");
+        customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -291,11 +284,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       const message = `I want to confirm my appointment for ${request.day} at ${request.time} (ID: ${request.slotId})`;
 
       const apiUrl =
-        customApiUrl ||
-        (window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-          ? "http://localhost:8000/api/chatbot/ask"
-          : "https://api.bayshorecommunication.org/api/chatbot/ask");
+        customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -648,15 +637,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
     // Create socket connection
     const socketInstance = io(
-<<<<<<< HEAD
       import.meta.env.VITE_SOCKET_URL ||
-        (window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-          ? "http://localhost:8000"
-          : "https://api.bayshorecommunication.org"),
-=======
-              import.meta.env.VITE_SOCKET_URL || "https://api.bayshorecommunication.org",
->>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
+        "https://api.bayshorecommunication.org",
       {
         transports: ["websocket", "polling"],
         timeout: 10000,

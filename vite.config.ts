@@ -8,33 +8,13 @@ export default defineConfig({
     port: 5174,
     proxy: {
       "/api": {
-<<<<<<< HEAD
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        secure: false,
-=======
         target: "https://api.bayshorecommunication.org",
         changeOrigin: true,
         secure: true,
->>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
       },
     },
   },
   define: {
-<<<<<<< HEAD
-    "import.meta.env.VITE_API_CHATBOT_SETTINGS_URL": JSON.stringify(
-      "http://localhost:8000/api/chatbot/settings"
-    ),
-    "import.meta.env.VITE_API_CHATBOT_URL": JSON.stringify(
-      "http://localhost:8000/api/chatbot/ask"
-    ),
-    "import.meta.env.VITE_API_CHATBOT_HISTORY_URL": JSON.stringify(
-      "http://localhost:8000/api/chatbot/history"
-    ),
-    "import.meta.env.VITE_SOCKET_URL": JSON.stringify("http://localhost:8000"),
-    "import.meta.env.VITE_WIDGET_EMBED_URL": JSON.stringify(
-      "http://localhost:5175"
-=======
     "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
       "https://api.bayshorecommunication.org"
     ),
@@ -52,7 +32,6 @@ export default defineConfig({
     ),
     "import.meta.env.VITE_WIDGET_EMBED_URL": JSON.stringify(
       "https://aibotwizard.bayshorecommunication.org"
->>>>>>> ad01bd7d9930f544be4630c4bff0f3614acf2d20
     ),
   },
 });
