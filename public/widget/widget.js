@@ -49,6 +49,31 @@
       widgetConfig.apiKey = currentScript.getAttribute('data-api-key') || '';
     }
 
+    // Extract fallback API key
+    if (currentScript.getAttribute('data-fallback-api-key')) {
+      widgetConfig.fallbackApiKey = currentScript.getAttribute('data-fallback-api-key') || '';
+    }
+
+    // Extract widget name
+    if (currentScript.getAttribute('data-widget-name')) {
+      widgetConfig.widgetName = currentScript.getAttribute('data-widget-name') || 'AI Assistant';
+    }
+
+    // Extract widget color
+    if (currentScript.getAttribute('data-widget-color')) {
+      widgetConfig.widgetColor = currentScript.getAttribute('data-widget-color') || 'blue';
+    }
+
+    // Extract auto-open setting
+    if (currentScript.getAttribute('data-auto-open')) {
+      widgetConfig.autoOpen = currentScript.getAttribute('data-auto-open') === 'true';
+    }
+
+    // Extract lead capture setting
+    if (currentScript.getAttribute('data-lead-capture')) {
+      widgetConfig.leadCapture = currentScript.getAttribute('data-lead-capture') === 'true';
+    }
+
     // Extract position if specified
     if (currentScript.getAttribute('data-position')) {
       widgetConfig.position = currentScript.getAttribute('data-position') || 'bottom-right';
@@ -71,7 +96,7 @@
     return true;
   }
 
-  // Fetch chatbot settings
+  // Fetch chatbot settings with fallback
   async function fetchSettings() {
     try {
       const apiUrl = window.CHATBOT_API_URL || 'https://api.bayshorecommunication.org';
@@ -82,6 +107,19 @@
           'Content-Type': 'application/json'
         }
       });
+      
+      if (!response.ok) {
+        console.warn('API returned error status:', response.status);
+        // Try fallback API key if available
+        const fallbackApiKey = document.currentScript?.getAttribute('data-fallback-api-key');
+        if (fallbackApiKey && fallbackApiKey !== widgetConfig.apiKey) {
+          console.log('Trying fallback API key...');
+          widgetConfig.apiKey = fallbackApiKey;
+          return await fetchSettingsWithKey(fallbackApiKey);
+        }
+        return false;
+      }
+      
       const data = await response.json();
       if (data.status === 'success') {
         widgetConfig.settings = data.settings;
@@ -90,8 +128,62 @@
       return false;
     } catch (error) {
       console.error('Failed to fetch chatbot settings:', error);
+      
+      // Try fallback API key if available
+      const fallbackApiKey = document.currentScript?.getAttribute('data-fallback-api-key');
+      if (fallbackApiKey && fallbackApiKey !== widgetConfig.apiKey) {
+        console.log('Trying fallback API key due to error...');
+        widgetConfig.apiKey = fallbackApiKey;
+        return await fetchSettingsWithKey(fallbackApiKey);
+      }
+      
       return false;
     }
+  }
+
+  // Helper function to fetch settings with a specific API key
+  async function fetchSettingsWithKey(apiKey) {
+    try {
+      const apiUrl = window.CHATBOT_API_URL || 'https://api.bayshorecommunication.org';
+      const response = await fetch(`${apiUrl}/api/chatbot/settings`, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        console.warn('Fallback API also returned error status:', response.status);
+        return false;
+      }
+      
+      const data = await response.json();
+      if (data.status === 'success') {
+        widgetConfig.settings = data.settings;
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to fetch settings with fallback API key:', error);
+      return false;
+    }
+  }
+
+  // Create default settings when API fails
+  function createDefaultSettings() {
+    console.log('Creating default settings for widget');
+    widgetConfig.settings = {
+      name: widgetConfig.widgetName || 'AI Assistant',
+      selectedColor: widgetConfig.widgetColor || 'blue',
+      leadCapture: widgetConfig.leadCapture !== undefined ? widgetConfig.leadCapture : true,
+      botBehavior: '2',
+      avatarUrl: null,
+      is_bot_connected: false,
+      auto_open: widgetConfig.autoOpen || false,
+      ai_behavior: 'You are a helpful and friendly AI assistant. You should be professional, concise, and focus on providing accurate information while maintaining a warm and engaging tone.'
+    };
+    return true;
   }
 
   // Load CSS styles for the widget
@@ -655,13 +747,21 @@
     if (parseConfig()) {
       // Make sure we have the API key before fetching settings
       if (widgetConfig.apiKey) {
-        await fetchSettings();
+        const settingsLoaded = await fetchSettings();
+        if (!settingsLoaded) {
+          console.log('Failed to load settings from API, using default settings');
+          createDefaultSettings();
+        }
       } else {
         console.error('API key is required to fetch settings');
+        createDefaultSettings();
       }
       loadStyles();
       createWidget();
       console.log('Chatbot widget initialized with API key:', widgetConfig.apiKey);
+      
+      // Mark widget as loaded for fallback detection
+      window.chatbotWidgetLoaded = true;
     }
   }
 
