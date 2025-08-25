@@ -386,7 +386,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
         localStorage.getItem("chatbot_video_seen") === "true";
       if (hasSeenVideo) {
         setVideoEnded(true);
-        setIsNewUser(false);
+        // Don't set isNewUser to false here - let the video logic handle that
+        // This allows the welcome message to still show for new users
       }
 
       // Always hide overlay when settings change
@@ -444,6 +445,27 @@ const ChatBot: React.FC<ChatBotProps> = ({
         console.log("Auto-playing video for new user");
         handleVideoPlay();
       }, 1000); // Increased delay to ensure chat is fully loaded
+    } else if (isOpen && isNewUser && !videoEnded) {
+      // For new users without video settings, show welcome message directly
+      setTimeout(() => {
+        console.log("Showing welcome message for new user without video");
+        setMessages((prev) => {
+          const hasWelcomeMessage = prev.some(
+            (msg) => msg.id.startsWith("video_welcome_")
+          );
+          
+          if (!hasWelcomeMessage) {
+            const welcomeMessage: Message = {
+              id: `video_welcome_${Date.now()}`,
+              text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+              sender: "bot",
+              timestamp: new Date(),
+            };
+            return [welcomeMessage];
+          }
+          return prev;
+        });
+      }, 500);
     }
   }, [
     isOpen,

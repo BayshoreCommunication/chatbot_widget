@@ -92,6 +92,17 @@
           <li>Try sending a message to test the conversation</li>
           <li>Check browser console for any errors</li>
         </ol>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+          <h4>🧪 Testing Video & Welcome Message:</h4>
+          <button onclick="clearLocalStorage()" style="padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+            Clear LocalStorage (Reset User)
+          </button>
+          <button onclick="checkLocalStorage()" style="padding: 10px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Check LocalStorage Status
+          </button>
+          <div id="localStorage-status" style="margin-top: 10px; font-family: monospace; font-size: 12px;"></div>
+        </div>
       </div>
     </div>
 
@@ -154,6 +165,34 @@
 
       // Run tests when page loads
       testConnections();
+      
+      // Function to clear localStorage for testing
+      function clearLocalStorage() {
+        localStorage.removeItem("chatbot_has_visited");
+        localStorage.removeItem("chatbot_video_seen");
+        localStorage.removeItem("chatSessionId");
+        alert("LocalStorage cleared! Refresh the page to test as a new user.");
+        checkLocalStorage();
+      }
+      
+      // Function to check localStorage status
+      function checkLocalStorage() {
+        const hasVisited = localStorage.getItem("chatbot_has_visited");
+        const hasSeenVideo = localStorage.getItem("chatbot_video_seen");
+        const sessionId = localStorage.getItem("chatSessionId");
+        
+        const statusDiv = document.getElementById("localStorage-status");
+        statusDiv.innerHTML = `
+          <strong>LocalStorage Status:</strong><br>
+          chatbot_has_visited: ${hasVisited || "null"}<br>
+          chatbot_video_seen: ${hasSeenVideo || "null"}<br>
+          chatSessionId: ${sessionId || "null"}<br>
+          <strong>Is New User:</strong> ${!hasVisited && !hasSeenVideo ? "YES" : "NO"}
+        `;
+      }
+      
+      // Check localStorage status on page load
+      checkLocalStorage();
     </script>
 
     <script
