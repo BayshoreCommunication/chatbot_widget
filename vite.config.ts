@@ -8,30 +8,34 @@ export default defineConfig({
     port: 5174,
     proxy: {
       "/api": {
-        target: "https://api.bayshorecommunication.org",
+        target: process.env.VITE_API_URL || "https://api.bayshorecommunication.org",
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },
   define: {
     "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
-      "https://api.bayshorecommunication.org"
+      process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
     ),
     "import.meta.env.VITE_API_CHATBOT_SETTINGS_URL": JSON.stringify(
-      "https://api.bayshorecommunication.org/api/chatbot/settings"
+      `${
+        process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
+      }/api/chatbot/settings`
     ),
     "import.meta.env.VITE_API_CHATBOT_URL": JSON.stringify(
-      "https://api.bayshorecommunication.org/api/chatbot/ask"
+      `${process.env.VITE_API_URL || "https://api.bayshorecommunication.org"}/api/chatbot/ask`
     ),
     "import.meta.env.VITE_API_CHATBOT_HISTORY_URL": JSON.stringify(
-      "https://api.bayshorecommunication.org/api/chatbot/history"
+      `${
+        process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
+      }/api/chatbot/history`
     ),
     "import.meta.env.VITE_SOCKET_URL": JSON.stringify(
-      "https://api.bayshorecommunication.org"
+      process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
     ),
     "import.meta.env.VITE_WIDGET_EMBED_URL": JSON.stringify(
-      "https://aibotwizard.bayshorecommunication.org"
+      process.env.VITE_WIDGET_URL || "https://aibotwidget.bayshorecommunication.org"
     ),
   },
 });

@@ -201,15 +201,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
         timestamp: new Date(),
       };
 
-      // Only add welcome message if no messages exist yet or only video-related messages
+      // Always add welcome message for new users after video ends
       setMessages((prev) => {
-        const hasNonSystemMessages = prev.some(
-          (msg) =>
-            msg.sender === "user" ||
-            (msg.sender === "bot" && !msg.id.startsWith("video_welcome_"))
+        const hasWelcomeMessage = prev.some(
+          (msg) => msg.id.startsWith("video_welcome_")
         );
 
-        if (!hasNonSystemMessages) {
+        if (!hasWelcomeMessage) {
           return [welcomeMessage];
         }
         return prev;
@@ -464,14 +462,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
       const savedSession = localStorage.getItem("chatSessionId");
       if (!savedSession) {
         setIsTyping(true);
-        // Add initial welcome message
-        const welcomeMessage: Message = {
-          id: Date.now().toString(),
-          text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
-          sender: "bot",
-          timestamp: new Date(),
-        };
-        setMessages([welcomeMessage]);
+        // Check if we already have a video welcome message
+        const existingWelcomeMessage = messages.find(msg => 
+          msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+        );
+        
+        if (!existingWelcomeMessage) {
+          // Add initial welcome message
+          const welcomeMessage: Message = {
+            id: `video_welcome_${Date.now()}`,
+            text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          setMessages([welcomeMessage]);
+        }
         setIsTyping(false);
         setHistoryFetched(true);
         return;
@@ -504,7 +509,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
             setBatchedMessages(true);
 
             setTimeout(() => {
-              setMessages(historyMessages);
+              // Preserve video welcome message if it exists and user is new
+              const videoWelcomeMessage = messages.find(msg => 
+                msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+              );
+              
+              if (videoWelcomeMessage && isNewUser) {
+                // Add video welcome message at the beginning of conversation history
+                setMessages([videoWelcomeMessage, ...historyMessages]);
+              } else {
+                setMessages(historyMessages);
+              }
+              
               if (response.mode) {
                 setCurrentMode(response.mode as BotMode);
               }
@@ -517,26 +533,40 @@ const ChatBot: React.FC<ChatBotProps> = ({
               }, 300);
             }, 300);
           } else {
-            // Add welcome message for empty history
+            // Check if we already have a video welcome message
+            const existingWelcomeMessage = messages.find(msg => 
+              msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+            );
+            
+            if (!existingWelcomeMessage) {
+              // Add welcome message for empty history
+              const welcomeMessage: Message = {
+                id: `video_welcome_${Date.now()}`,
+                text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+                sender: "bot",
+                timestamp: new Date(),
+              };
+              setMessages([welcomeMessage]);
+            }
+            setIsLoading(false);
+            setIsTyping(false);
+          }
+        } else {
+          // Check if we already have a video welcome message
+          const existingWelcomeMessage = messages.find(msg => 
+            msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+          );
+          
+          if (!existingWelcomeMessage) {
+            // Add welcome message when no user data
             const welcomeMessage: Message = {
-              id: Date.now().toString(),
+              id: `video_welcome_${Date.now()}`,
               text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
               sender: "bot",
               timestamp: new Date(),
             };
             setMessages([welcomeMessage]);
-            setIsLoading(false);
-            setIsTyping(false);
           }
-        } else {
-          // Add welcome message when no user data
-          const welcomeMessage: Message = {
-            id: Date.now().toString(),
-            text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
-            sender: "bot",
-            timestamp: new Date(),
-          };
-          setMessages([welcomeMessage]);
           setIsLoading(false);
           setIsTyping(false);
         }
@@ -547,14 +577,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
           console.log("Session not found - this is normal for new users");
         }
 
-        // Add welcome message on error
-        const welcomeMessage: Message = {
-          id: Date.now().toString(),
-          text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
-          sender: "bot",
-          timestamp: new Date(),
-        };
-        setMessages([welcomeMessage]);
+        // Check if we already have a video welcome message
+        const existingWelcomeMessage = messages.find(msg => 
+          msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+        );
+        
+        if (!existingWelcomeMessage) {
+          // Add welcome message on error
+          const welcomeMessage: Message = {
+            id: `video_welcome_${Date.now()}`,
+            text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          setMessages([welcomeMessage]);
+        }
         setIsLoading(false);
         setIsTyping(false);
       } finally {
@@ -834,7 +871,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
           const historyMessages = convertToMessages(
             response.user_data.conversation_history
           );
-          setMessages(historyMessages);
+          
+          // Preserve video welcome message if it exists and user is new
+          const videoWelcomeMessage = messages.find(msg => 
+            msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+          );
+          
+          if (videoWelcomeMessage && isNewUser) {
+            // Add video welcome message at the beginning of conversation history
+            setMessages([videoWelcomeMessage, ...historyMessages]);
+          } else {
+            setMessages(historyMessages);
+          }
         } else {
           // Check if we're in agent mode and handle accordingly
           if (isAgentMode) {
@@ -899,6 +947,26 @@ const ChatBot: React.FC<ChatBotProps> = ({
       if (isNewUser) {
         setVideoEnded(false);
         setShowVideo(false);
+        
+        // Ensure welcome message is shown for new users
+        setTimeout(() => {
+          setMessages((prev) => {
+            const hasWelcomeMessage = prev.some(
+              (msg) => msg.id.startsWith("video_welcome_")
+            );
+            
+            if (!hasWelcomeMessage) {
+              const welcomeMessage: Message = {
+                id: `video_welcome_${Date.now()}`,
+                text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+                sender: "bot",
+                timestamp: new Date(),
+              };
+              return [welcomeMessage];
+            }
+            return prev;
+          });
+        }, 100);
       }
 
       // Force scroll to bottom after opening
