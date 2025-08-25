@@ -531,13 +531,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
             setBatchedMessages(true);
 
             setTimeout(() => {
-              // Preserve video welcome message if it exists and user is new
+              // Always preserve video welcome message at the top
               const videoWelcomeMessage = messages.find(msg => 
                 msg.id.startsWith("video_welcome_") && msg.sender === "bot"
               );
               
-              if (videoWelcomeMessage && isNewUser) {
-                // Add video welcome message at the beginning of conversation history
+              if (videoWelcomeMessage) {
+                // Always add video welcome message at the beginning of conversation history
                 setMessages([videoWelcomeMessage, ...historyMessages]);
               } else {
                 setMessages(historyMessages);
@@ -753,7 +753,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
           sender: "bot",
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, takoverMessage]);
+        // Add takeover message while preserving welcome message at top
+        setMessages((prev) => {
+          const welcomeMessage = prev.find(msg => 
+            msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+          );
+          
+          if (welcomeMessage) {
+            const otherMessages = prev.filter(msg => 
+              !msg.id.startsWith("video_welcome_")
+            );
+            return [welcomeMessage, ...otherMessages, takoverMessage];
+          }
+          
+          return [...prev, takoverMessage];
+        });
       }
     });
 
@@ -771,7 +785,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
           sender: "bot",
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, releaseMessage]);
+        // Add release message while preserving welcome message at top
+        setMessages((prev) => {
+          const welcomeMessage = prev.find(msg => 
+            msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+          );
+          
+          if (welcomeMessage) {
+            const otherMessages = prev.filter(msg => 
+              !msg.id.startsWith("video_welcome_")
+            );
+            return [welcomeMessage, ...otherMessages, releaseMessage];
+          }
+          
+          return [...prev, releaseMessage];
+        });
       }
     });
 
@@ -794,7 +822,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
           timestamp: new Date(data.message.timestamp),
         };
 
-        setMessages((prev) => [...prev, adminMessage]);
+        // Add admin message while preserving welcome message at top
+        setMessages((prev) => {
+          const welcomeMessage = prev.find(msg => 
+            msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+          );
+          
+          if (welcomeMessage) {
+            const otherMessages = prev.filter(msg => 
+              !msg.id.startsWith("video_welcome_")
+            );
+            return [welcomeMessage, ...otherMessages, adminMessage];
+          }
+          
+          return [...prev, adminMessage];
+        });
 
         // Stop typing animation if it's running
         setIsTyping(false);
@@ -867,7 +909,22 @@ const ChatBot: React.FC<ChatBotProps> = ({
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, newUserMessage]);
+    // Add user message while preserving welcome message at top
+    setMessages((prev) => {
+      const welcomeMessage = prev.find(msg => 
+        msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+      );
+      
+      if (welcomeMessage) {
+        // Remove welcome message from current position and add it back at the top
+        const otherMessages = prev.filter(msg => 
+          !msg.id.startsWith("video_welcome_")
+        );
+        return [welcomeMessage, ...otherMessages, newUserMessage];
+      }
+      
+      return [...prev, newUserMessage];
+    });
     setBatchedMessages(false);
     setIsTyping(true);
 
@@ -924,7 +981,22 @@ const ChatBot: React.FC<ChatBotProps> = ({
               botMessage.appointmentSlots = appointmentSlots;
             }
 
-            setMessages((prev) => [...prev, botMessage]);
+            // Always preserve welcome message at the top
+            setMessages((prev) => {
+              const welcomeMessage = prev.find(msg => 
+                msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+              );
+              
+              if (welcomeMessage) {
+                // Remove welcome message from current position and add it back at the top
+                const otherMessages = prev.filter(msg => 
+                  !msg.id.startsWith("video_welcome_")
+                );
+                return [welcomeMessage, ...otherMessages, botMessage];
+              }
+              
+              return [...prev, botMessage];
+            });
           }
         }
       }
@@ -936,7 +1008,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, errorMessage]);
+      // Always preserve welcome message at the top even for error messages
+      setMessages((prev) => {
+        const welcomeMessage = prev.find(msg => 
+          msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+        );
+        
+        if (welcomeMessage) {
+          const otherMessages = prev.filter(msg => 
+            !msg.id.startsWith("video_welcome_")
+          );
+          return [welcomeMessage, ...otherMessages, errorMessage];
+        }
+        
+        return [...prev, errorMessage];
+      });
       console.error("Error sending message:", error);
     } finally {
       setIsTyping(false);
@@ -1040,7 +1126,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, slotSelectionMessage]);
+    // Add slot selection message while preserving welcome message at top
+    setMessages((prev) => {
+      const welcomeMessage = prev.find(msg => 
+        msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+      );
+      
+      if (welcomeMessage) {
+        const otherMessages = prev.filter(msg => 
+          !msg.id.startsWith("video_welcome_")
+        );
+        return [welcomeMessage, ...otherMessages, slotSelectionMessage];
+      }
+      
+      return [...prev, slotSelectionMessage];
+    });
     setIsTyping(true);
 
     try {
@@ -1058,7 +1158,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, confirmationMessage]);
+      // Add confirmation message while preserving welcome message at top
+      setMessages((prev) => {
+        const welcomeMessage = prev.find(msg => 
+          msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+        );
+        
+        if (welcomeMessage) {
+          const otherMessages = prev.filter(msg => 
+            !msg.id.startsWith("video_welcome_")
+          );
+          return [welcomeMessage, ...otherMessages, confirmationMessage];
+        }
+        
+        return [...prev, confirmationMessage];
+      });
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -1067,7 +1181,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, errorMessage]);
+      // Add error message while preserving welcome message at top
+      setMessages((prev) => {
+        const welcomeMessage = prev.find(msg => 
+          msg.id.startsWith("video_welcome_") && msg.sender === "bot"
+        );
+        
+        if (welcomeMessage) {
+          const otherMessages = prev.filter(msg => 
+            !msg.id.startsWith("video_welcome_")
+          );
+          return [welcomeMessage, ...otherMessages, errorMessage];
+        }
+        
+        return [...prev, errorMessage];
+      });
       console.error("Error confirming appointment:", error);
     } finally {
       setIsTyping(false);
