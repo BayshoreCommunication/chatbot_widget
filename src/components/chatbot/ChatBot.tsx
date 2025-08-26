@@ -173,7 +173,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
       if (!response.ok) {
         console.log("❌ Welcome message API failed:", response.status);
-        setWelcomeMessage("Welcome message not found");
+        setWelcomeMessage(
+          "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you."
+        );
         return;
       }
 
