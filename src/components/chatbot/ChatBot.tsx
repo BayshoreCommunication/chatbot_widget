@@ -121,6 +121,15 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   };
 
+  // Generate dynamic welcome message based on settings
+  const getWelcomeMessage = () => {
+    const botName = settings?.name || "AI Assistant";
+    return `👋 Welcome! I'm your ${botName}. I can help you with:
+• Scheduling appointments
+• Answering questions about our services
+• Providing information and support`;
+  };
+
   // Handle video functionality
   const handleVideoPlay = () => {
     console.log("handleVideoPlay called with:", {
@@ -196,7 +205,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     setTimeout(() => {
       const welcomeMessage: Message = {
         id: `video_welcome_${Date.now()}`,
-        text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+        text: getWelcomeMessage(),
         sender: "bot",
         timestamp: new Date(),
       };
@@ -535,7 +544,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
           if (!hasWelcomeMessage) {
             const welcomeMessage: Message = {
               id: `video_welcome_${Date.now()}`,
-              text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+              text: getWelcomeMessage(),
               sender: "bot",
               timestamp: new Date(),
             };
@@ -571,7 +580,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
           // Add initial welcome message
           const welcomeMessage: Message = {
             id: `video_welcome_${Date.now()}`,
-            text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+            text: getWelcomeMessage(),
             sender: "bot",
             timestamp: new Date(),
           };
@@ -644,7 +653,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
               // Add welcome message for empty history
               const welcomeMessage: Message = {
                 id: `video_welcome_${Date.now()}`,
-                text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+                text: getWelcomeMessage(),
                 sender: "bot",
                 timestamp: new Date(),
               };
@@ -663,7 +672,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
             // Add welcome message when no user data
             const welcomeMessage: Message = {
               id: `video_welcome_${Date.now()}`,
-              text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+              text: getWelcomeMessage(),
               sender: "bot",
               timestamp: new Date(),
             };
@@ -688,7 +697,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
           // Add welcome message on error
           const welcomeMessage: Message = {
             id: `video_welcome_${Date.now()}`,
-            text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+            text: getWelcomeMessage(),
             sender: "bot",
             timestamp: new Date(),
           };
@@ -1161,7 +1170,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
             if (!hasWelcomeMessage) {
               const welcomeMessage: Message = {
                 id: `video_welcome_${Date.now()}`,
-                text: "Hello, Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.",
+                text: getWelcomeMessage(),
                 sender: "bot",
                 timestamp: new Date(),
               };
