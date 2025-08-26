@@ -20,6 +20,10 @@ interface ChatBodyProps {
   instantReplies?: InstantReplyMessage[];
   showInstantReplies?: boolean;
   onInstantReplyClick?: (message: string) => void;
+  settings?: {
+    avatarUrl?: string;
+    name?: string;
+  } | null;
 }
 
 const ChatBody: React.FC<ChatBodyProps> = ({
@@ -33,6 +37,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   instantReplies = [],
   showInstantReplies = false,
   onInstantReplyClick,
+  settings,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -222,6 +227,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
                 onOptionClick={onOptionClick}
                 onSlotSelect={onSlotSelect}
                 onSlotConfirm={onSlotConfirm}
+                settings={settings}
               />
             </motion.div>
           ))}

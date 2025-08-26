@@ -1,20 +1,20 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import ChatBody from "./ChatBody";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import type { AppointmentSlot, BotMode, Message } from "./types";
-// import InstantReplyPopup from './InstantReplyPopup';
 
 interface ChatBotProps {
   apiKey?: string;
   customApiUrl?: string;
   embedded?: boolean;
-  initiallyOpen?: boolean;
+  initiallyOpen?: boolean | string | number;
   onToggleChat?: () => void;
   settings?: ChatbotSettings | null;
+  welcomeApiBaseUrl?: string; // base for /api/chatbot/welcome-message
 }
 
 interface ChatbotSettings {
@@ -24,8 +24,8 @@ interface ChatbotSettings {
   avatarUrl: string;
   auto_open?: boolean;
   video_url?: string;
-  video_autoplay?: boolean;
-  video_duration?: number;
+  video_autoplay?: boolean; // ignored now; we always autoplay inline
+  video_duration?: number; // ignored now; we play inline
 }
 
 interface ConversationMessage {
@@ -62,6 +62,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   initiallyOpen = false,
   onToggleChat,
   settings,
+  welcomeApiBaseUrl,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(() => Boolean(initiallyOpen));
@@ -71,6 +72,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const [currentMode, setCurrentMode] = useState<BotMode>("initial");
   const [historyFetched, setHistoryFetched] = useState(false);
   const [batchedMessages, setBatchedMessages] = useState<boolean>(false);
+
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipText, setTooltipText] = useState(
     "Hello! I'm your AI assistant. Need help?"
@@ -87,29 +89,38 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const chatBodyRef = useRef<HTMLDivElement>(null);
   const [forceScrollBottom, setForceScrollBottom] = useState(0);
+
   const [instantReplies, setInstantReplies] = useState<InstantReplyMessage[]>(
     []
   );
   const [showInstantReplies, setShowInstantReplies] = useState(false);
 
-  // Socket.IO state for real-time admin messages
   const [isAgentMode, setIsAgentMode] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  // Video state
-  const [showVideo, setShowVideo] = useState(false);
-  const [videoEnded, setVideoEnded] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  // welcome text
+  const [welcomeMessage, setWelcomeMessage] = useState<string>("");
 
-  // Check if user is new (first time visitor)
+  // no overlay anymore; we autoplay inline in the chat flow
+  // const [showVideo, setShowVideo] = useState(false);
+
+  // new user detection (still useful for analytics)
   const [isNewUser, setIsNewUser] = useState<boolean>(() => {
     const hasVisited = localStorage.getItem("chatbot_has_visited");
-    const hasSeenVideo = localStorage.getItem("chatbot_video_seen");
-    return !hasVisited && !hasSeenVideo;
+    return !hasVisited;
   });
 
-  // Add function to force scroll to bottom
+  const [sessionId] = useState<string>(() => {
+    const savedSession = localStorage.getItem("chatSessionId");
+    return savedSession || uuidv4();
+  });
+
+  useEffect(() => {
+    localStorage.setItem("chatSessionId", sessionId);
+  }, [sessionId]);
+
+  // utils
   const forceScrollToBottom = () => {
     setForceScrollBottom((prev) => prev + 1);
     const scrollContainer =
@@ -121,301 +132,71 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   };
 
-  // Generate dynamic welcome message based on settings
-  const getWelcomeMessage = () => {
+  const getNormalizedApiBase = useCallback(() => {
+    const raw = (
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+    ).trim();
+    const cleaned = raw.replace(/%0A|\n|\r/g, "").replace(/\s+/g, "");
+    const noTrailingSlash = cleaned.replace(/\/+$/, "");
+    const noTrailingApi = noTrailingSlash.replace(/\/api$/, "");
+    return noTrailingApi;
+  }, []);
+
+  const getDefaultWelcome = useCallback(() => {
     const botName = settings?.name || "AI Assistant";
-    return `👋 Welcome! I'm your ${botName}. I can help you with:
-• Scheduling appointments
-• Answering questions about our services
-• Providing information and support`;
-  };
+    return (
+      `👋 Welcome! I'm your ${botName}. I can help you with:\n` +
+      `• Scheduling appointments\n` +
+      `• Answering questions about our services\n` +
+      `• Providing information and support`
+    );
+  }, [settings?.name]);
 
-  // Handle video functionality
-  const handleVideoPlay = () => {
-    console.log("handleVideoPlay called with:", {
-      video_url: settings?.video_url,
-      video_autoplay: settings?.video_autoplay,
-      isNewUser,
-      videoEnded,
-      showVideo,
-    });
-
-    if (
-      settings?.video_url &&
-      settings?.video_autoplay &&
-      isNewUser && // Only play for new users
-      !videoEnded &&
-      !showVideo
-    ) {
-      console.log("Playing video for new user:", settings.video_url);
-      setShowVideo(true);
-
-      // Use setTimeout to ensure DOM is ready
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.currentTime = 0;
-          videoRef.current.muted = true; // Mute for autoplay
-
-          const playPromise = videoRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log("Video started playing successfully");
-                // Stop video after specified duration
-                const duration = settings.video_duration || 10;
-                setTimeout(() => {
-                  if (videoRef.current) {
-                    videoRef.current.pause();
-                    setVideoEnded(true);
-                    setShowVideo(false);
-                  }
-                }, duration * 1000);
-              })
-              .catch((error) => {
-                console.error("Error playing video:", error);
-                setShowVideo(false);
-              });
-          }
-        }
-      }, 100);
-    } else {
-      console.log("Video play conditions not met:", {
-        hasVideoUrl: !!settings?.video_url,
-        videoAutoplay: settings?.video_autoplay,
-        isNewUser,
-        videoEnded,
-        showVideo,
-      });
-    }
-  };
-
-  const handleVideoEnd = () => {
-    console.log("Video ended, marking user as seen video");
-    setVideoEnded(true);
-    setShowVideo(false);
-
-    // Mark user as having seen the video (this prevents future plays)
-    localStorage.setItem("chatbot_video_seen", "true");
-    setIsNewUser(false);
-
-    // Also mark as visited for general tracking
-    localStorage.setItem("chatbot_has_visited", "true");
-
-    // Show welcome message after video ends
-    setTimeout(() => {
-      const welcomeMessage: Message = {
-        id: `video_welcome_${Date.now()}`,
-        text: getWelcomeMessage(),
-        sender: "bot",
-        timestamp: new Date(),
-      };
-
-      // Always add welcome message for new users after video ends
-      setMessages((prev) => {
-        const hasWelcomeMessage = prev.some((msg) =>
-          msg.id.startsWith("video_welcome_")
-        );
-
-        if (!hasWelcomeMessage) {
-          return [welcomeMessage];
-        }
-        return prev;
-      });
-    }, 500);
-  };
-
-  // API Functions
-  const getConversationHistory = async (
-    sessionId: string
-  ): Promise<ChatResponse> => {
+  const fetchWelcomeMessage = useCallback(async () => {
     try {
-      const historyBase =
-        import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
-        "https://api.bayshorecommunication.org/api/chatbot/history";
-      const response = await fetch(`${historyBase}/${sessionId}`, {
-        method: "GET",
+      const base =
+        (welcomeApiBaseUrl && welcomeApiBaseUrl.trim().replace(/\/+$/, "")) ||
+        getNormalizedApiBase();
+      const url = `${base}/api/chatbot/welcome-message`;
+
+      console.log("🔍 Fetching welcome message from:", url);
+      console.log(
+        "🔍 Using API key:",
+        apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c"
+      );
+
+      const response = await fetch(url, {
         headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
+          "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
         },
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching conversation history:", error);
-      throw error;
-    }
-  };
-
-  const sendMessageToApi = async (
-    message: string,
-    sessionId: string
-  ): Promise<ChatResponse> => {
-    try {
-      const apiUrl =
-        customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
-        },
-        body: JSON.stringify({
-          question: message,
-          session_id: sessionId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error calling chatbot API:", error);
-      throw error;
-    }
-  };
-
-  const confirmAppointmentSlot = async (request: {
-    slotId: string;
-    sessionId: string;
-    day: string;
-    time: string;
-  }): Promise<ChatResponse> => {
-    try {
-      const message = `I want to confirm my appointment for ${request.day} at ${request.time} (ID: ${request.slotId})`;
-
-      const apiUrl =
-        customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
-        },
-        body: JSON.stringify({
-          question: message,
-          session_id: request.sessionId,
-          slot_confirmation: {
-            slot_id: request.slotId,
-            day: request.day,
-            time: request.time,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error confirming appointment slot:", error);
-      throw error;
-    }
-  };
-
-  // Fetch instant replies
-  const fetchInstantReplies = async () => {
-    try {
-      const apiUrl =
-        import.meta.env.VITE_API_BASE_URL ||
-        "https://api.bayshorecommunication.org";
-      console.log("🌐 Fetching instant replies from:", apiUrl);
-
-      const response = await fetch(`${apiUrl}/api/instant-reply/`, {
-        headers: {
-          "X-API-Key": apiKey || import.meta.env.VITE_DEFAULT_API_KEY,
-        },
-      });
-
-      console.log("📡 Instant reply response status:", response.status);
-
-      if (!response.ok) {
-        console.error(
-          "❌ Instant reply API error:",
-          response.status,
-          response.statusText
-        );
-        return false;
+        console.log("❌ Welcome message API failed:", response.status);
+        setWelcomeMessage("Welcome message not found");
+        return;
       }
 
       const data = await response.json();
-      console.log("📦 Instant reply data:", data);
+      console.log("📥 Welcome message API response:", data);
 
-      if (
-        data &&
-        data.status === "success" &&
-        data.data &&
-        data.data.isActive
-      ) {
-        const messages = data.data.messages || [];
-        console.log("💬 Found instant reply messages:", messages.length);
-
-        if (messages.length > 0) {
-          // Sort messages by order
-          const sortedMessages = messages.sort(
-            (a: InstantReplyMessage, b: InstantReplyMessage) =>
-              a.order - b.order
-          );
-          console.log("📝 Setting instant replies:", sortedMessages);
-          setInstantReplies(sortedMessages);
-          setShowInstantReplies(true);
-          return true;
-        }
+      if (data?.status === "success" && data?.data?.message) {
+        console.log("✅ Setting welcome message:", data.data.message);
+        setWelcomeMessage(String(data.data.message));
       } else {
-        console.log("ℹ️ Instant replies not active or no data");
+        console.log("⚠️ No welcome message in response");
+        setWelcomeMessage("Welcome message not found");
       }
-      return false;
     } catch (error) {
-      console.error("💥 Error fetching instant replies:", error);
-      return false;
+      console.log("💥 Error fetching welcome message:", error);
+      setWelcomeMessage("Welcome message not found");
     }
-  };
-
-  // Handle instant reply message click
-  const handleInstantReplyClick = (message: string) => {
-    // Add the instant reply message as a user message
-    const userMessage: Message = {
-      id: `instant_reply_${Date.now()}`,
-      text: message,
-      sender: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-
-    // Send the message to the API
-    sendMessage(message);
-
-    // Don't hide instant replies - keep them visible for continued use
-    // setShowInstantReplies(false);
-    // setInstantRepliesShown(true);
-  };
-
-  const convertToMessages = (
-    conversationHistory: ConversationMessage[]
-  ): Message[] => {
-    return conversationHistory.map((item, index) => ({
-      id: index.toString(),
-      text: item.content,
-      sender: item.role === "user" ? "user" : "bot",
-      timestamp: new Date(),
-    }));
-  };
+  }, [apiKey, welcomeApiBaseUrl, getNormalizedApiBase]);
 
   const parseAppointmentSlots = (
     text: string
   ): AppointmentSlot[] | undefined => {
-    if (!text.includes("Available appointment slots")) {
-      return undefined;
-    }
-
+    if (!text.includes("Available appointment slots")) return undefined;
     const slots: AppointmentSlot[] = [];
     const lines = text.split("\n");
     let currentDate = "";
@@ -431,7 +212,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
       } else if (line.trim().startsWith("•") || line.trim().startsWith("*")) {
         const timeMatch = line.match(/([0-9]+:[0-9]+\s+[AP]M)/i);
         const idMatch = line.match(/ID:\s+(slot_[\w-]+)/);
-
         if (timeMatch && idMatch) {
           slots.push({
             id: idMatch[1],
@@ -443,150 +223,108 @@ const ChatBot: React.FC<ChatBotProps> = ({
         }
       }
     }
-
     return slots.length > 0 ? slots : undefined;
   };
 
-  const [sessionId] = useState<string>(() => {
-    const savedSession = localStorage.getItem("chatSessionId");
-    return savedSession || uuidv4();
-  });
+  // APIs
+  const getConversationHistory = async (
+    sessionId: string
+  ): Promise<ChatResponse> => {
+    const historyBase =
+      import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
+      "https://api.bayshorecommunication.org/api/chatbot/history";
+    const response = await fetch(`${historyBase}/${sessionId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+      },
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  };
 
-  useEffect(() => {
-    localStorage.setItem("chatSessionId", sessionId);
-  }, [sessionId]);
+  const sendMessageToApi = async (
+    message: string,
+    sessionId: string
+  ): Promise<ChatResponse> => {
+    const apiUrl =
+      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+      },
+      body: JSON.stringify({
+        question: message,
+        session_id: sessionId,
+      }),
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  };
 
-  // Settings loaded: log and restore video-played state from storage
+  const confirmAppointmentSlot = async (request: {
+    slotId: string;
+    sessionId: string;
+    day: string;
+    time: string;
+  }): Promise<ChatResponse> => {
+    const message = `I want to confirm my appointment for ${request.day} at ${request.time} (ID: ${request.slotId})`;
+    const apiUrl =
+      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+      },
+      body: JSON.stringify({
+        question: message,
+        session_id: request.sessionId,
+        slot_confirmation: {
+          slot_id: request.slotId,
+          day: request.day,
+          time: request.time,
+        },
+      }),
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  };
+
+  // effects
   useEffect(() => {
     if (settings) {
-      console.log("ChatBot settings loaded:", settings);
-      console.log("Auto-open setting:", settings.auto_open);
-      console.log("Video settings:", {
-        video_url: settings.video_url,
-        video_autoplay: settings.video_autoplay,
-        video_duration: settings.video_duration,
-      });
-      console.log("Is new user:", isNewUser);
-
-      // Check if user has already seen the video
-      const hasSeenVideo =
-        localStorage.getItem("chatbot_video_seen") === "true";
-      if (hasSeenVideo) {
-        setVideoEnded(true);
-        // Don't set isNewUser to false here - let the video logic handle that
-        // This allows the welcome message to still show for new users
-      }
-
-      // Always hide overlay when settings change
-      setShowVideo(false);
+      const hasVisited = localStorage.getItem("chatbot_has_visited");
+      if (!hasVisited) localStorage.setItem("chatbot_has_visited", "true");
     }
-  }, [settings, sessionId, isNewUser]);
+  }, [settings, sessionId]);
 
-  // Sync internal open state with initiallyOpen prop when it changes (after settings load)
   useEffect(() => {
-    // Accept booleans, 'true' strings, and 1/'1' for safety
     const shouldOpen =
       initiallyOpen === true ||
       (typeof initiallyOpen === "string" &&
         initiallyOpen.toLowerCase() === "true") ||
       initiallyOpen === 1 ||
       initiallyOpen === "1";
-    if (shouldOpen && !isOpen) {
-      setIsOpen(true);
-    }
+    if (shouldOpen && !isOpen) setIsOpen(true);
   }, [initiallyOpen, isOpen]);
 
-  // Handle auto-open setting (fallback if initiallyOpen wasn't used)
   useEffect(() => {
     if (settings?.auto_open && !isOpen) {
-      // Small delay to ensure component is fully mounted and settings are loaded
-      const t = setTimeout(() => {
-        console.log("Auto-opening chatbot due to settings");
-        setIsOpen(true);
-      }, 2000); // Increased delay to ensure everything is loaded
+      const t = setTimeout(() => setIsOpen(true), 2000);
       return () => clearTimeout(t);
     }
   }, [settings?.auto_open, isOpen]);
 
-  // Handle video when chat opens
-  useEffect(() => {
-    console.log("Video trigger effect - conditions:", {
-      isOpen,
-      hasVideoUrl: !!settings?.video_url,
-      videoAutoplay: settings?.video_autoplay,
-      isNewUser,
-      videoEnded,
-      showVideo,
-    });
-
-    if (
-      isOpen &&
-      settings?.video_url &&
-      settings?.video_autoplay &&
-      isNewUser && // Only play for new users
-      !videoEnded &&
-      !showVideo
-    ) {
-      // Small delay to ensure chat is fully opened
-      setTimeout(() => {
-        console.log("Auto-playing video for new user");
-        handleVideoPlay();
-      }, 1000); // Increased delay to ensure chat is fully loaded
-    } else if (isOpen && isNewUser && !videoEnded) {
-      // For new users without video settings, show welcome message directly
-      setTimeout(() => {
-        console.log("Showing welcome message for new user without video");
-        setMessages((prev) => {
-          const hasWelcomeMessage = prev.some((msg) =>
-            msg.id.startsWith("video_welcome_")
-          );
-
-          if (!hasWelcomeMessage) {
-            const welcomeMessage: Message = {
-              id: `video_welcome_${Date.now()}`,
-              text: getWelcomeMessage(),
-              sender: "bot",
-              timestamp: new Date(),
-            };
-            return [welcomeMessage];
-          }
-          return prev;
-        });
-      }, 500);
-    }
-  }, [
-    isOpen,
-    settings?.video_url,
-    settings?.video_autoplay,
-    isNewUser,
-    videoEnded,
-    showVideo,
-  ]);
-
-  // Initialize chat and fetch conversation history
   useEffect(() => {
     if (!isOpen || historyFetched) return;
 
-    const fetchConversationHistory = async () => {
+    const run = async () => {
       const savedSession = localStorage.getItem("chatSessionId");
       if (!savedSession) {
-        setIsTyping(true);
-        // Check if we already have a video welcome message
-        const existingWelcomeMessage = messages.find(
-          (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-        );
-
-        if (!existingWelcomeMessage) {
-          // Add initial welcome message
-          const welcomeMessage: Message = {
-            id: `video_welcome_${Date.now()}`,
-            text: getWelcomeMessage(),
-            sender: "bot",
-            timestamp: new Date(),
-          };
-          setMessages([welcomeMessage]);
-        }
-        setIsTyping(false);
         setHistoryFetched(true);
         return;
       }
@@ -596,113 +334,37 @@ const ChatBot: React.FC<ChatBotProps> = ({
         const response = await getConversationHistory(savedSession);
 
         if (response.user_data && response.user_data.conversation_history) {
-          // Check if the conversation is in agent mode
-          if (response.user_data.agent_mode || response.agent_mode) {
+          if (response.user_data.agent_mode || response.agent_mode)
             setIsAgentMode(true);
-          }
 
-          // Fallback: Check if there are any agent messages in the history
           const hasAgentMessages = response.user_data.conversation_history.some(
             (msg) =>
               msg.metadata?.type === "agent_message" || msg.metadata?.agent_id
           );
-          if (hasAgentMessages) {
-            setIsAgentMode(true);
-          }
+          if (hasAgentMessages) setIsAgentMode(true);
 
           const historyMessages = convertToMessages(
             response.user_data.conversation_history
           );
-          if (historyMessages.length > 0) {
-            setIsPositioningScroll(true);
-            setBatchedMessages(true);
 
+          setIsPositioningScroll(true);
+          setBatchedMessages(true);
+          setTimeout(() => {
+            setMessages(historyMessages);
+            if (response.mode) setCurrentMode(response.mode as BotMode);
             setTimeout(() => {
-              // Always preserve video welcome message at the top
-              const videoWelcomeMessage = messages.find(
-                (msg) =>
-                  msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-              );
-
-              if (videoWelcomeMessage) {
-                // Always add video welcome message at the beginning of conversation history
-                setMessages([videoWelcomeMessage, ...historyMessages]);
-              } else {
-                setMessages(historyMessages);
-              }
-
-              if (response.mode) {
-                setCurrentMode(response.mode as BotMode);
-              }
+              forceScrollToBottom();
               setTimeout(() => {
-                forceScrollToBottom();
-                setTimeout(() => {
-                  setIsLoading(false);
-                  setIsPositioningScroll(false);
-                }, 300);
+                setIsLoading(false);
+                setIsPositioningScroll(false);
               }, 300);
             }, 300);
-          } else {
-            // Check if we already have a video welcome message
-            const existingWelcomeMessage = messages.find(
-              (msg) =>
-                msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-            );
-
-            if (!existingWelcomeMessage) {
-              // Add welcome message for empty history
-              const welcomeMessage: Message = {
-                id: `video_welcome_${Date.now()}`,
-                text: getWelcomeMessage(),
-                sender: "bot",
-                timestamp: new Date(),
-              };
-              setMessages([welcomeMessage]);
-            }
-            setIsLoading(false);
-            setIsTyping(false);
-          }
+          }, 300);
         } else {
-          // Check if we already have a video welcome message
-          const existingWelcomeMessage = messages.find(
-            (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-          );
-
-          if (!existingWelcomeMessage) {
-            // Add welcome message when no user data
-            const welcomeMessage: Message = {
-              id: `video_welcome_${Date.now()}`,
-              text: getWelcomeMessage(),
-              sender: "bot",
-              timestamp: new Date(),
-            };
-            setMessages([welcomeMessage]);
-          }
           setIsLoading(false);
           setIsTyping(false);
         }
-      } catch (error) {
-        console.error("Error fetching conversation history:", error);
-        // Check if it's a 404 error (session not found) - this is normal for new sessions
-        if (error instanceof Error && error.message.includes("404")) {
-          console.log("Session not found - this is normal for new users");
-        }
-
-        // Check if we already have a video welcome message
-        const existingWelcomeMessage = messages.find(
-          (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-        );
-
-        if (!existingWelcomeMessage) {
-          // Add welcome message on error
-          const welcomeMessage: Message = {
-            id: `video_welcome_${Date.now()}`,
-            text: getWelcomeMessage(),
-            sender: "bot",
-            timestamp: new Date(),
-          };
-          setMessages([welcomeMessage]);
-        }
+      } catch {
         setIsLoading(false);
         setIsTyping(false);
       } finally {
@@ -710,80 +372,51 @@ const ChatBot: React.FC<ChatBotProps> = ({
       }
     };
 
-    fetchConversationHistory();
+    run();
   }, [isOpen, historyFetched]);
 
-  // Reset batchedMessages after it's been applied
   useEffect(() => {
     if (batchedMessages && !isLoading) {
-      // Reset batch flag after a short delay
-      const timer = setTimeout(() => {
-        setBatchedMessages(false);
-      }, 500);
-
+      const timer = setTimeout(() => setBatchedMessages(false), 500);
       return () => clearTimeout(timer);
     }
   }, [batchedMessages, isLoading]);
 
-  // Add tooltip rotation on a timer
   useEffect(() => {
     const startTooltipRotation = () => {
       if (isOpen) {
         setShowTooltip(false);
-        if (tooltipTimeoutRef.current) {
-          clearTimeout(tooltipTimeoutRef.current);
-        }
+        if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
         return;
       }
-
-      // Show tooltip and rotate text
       setShowTooltip(true);
-
-      const rotateTooltipText = () => {
-        setTooltipText((prevText) => {
-          const currentIndex = tooltipTexts.indexOf(prevText);
-          const nextIndex = (currentIndex + 1) % tooltipTexts.length;
-          return tooltipTexts[nextIndex];
+      const rotate = () => {
+        setTooltipText((prev) => {
+          const i = tooltipTexts.indexOf(prev);
+          const next = (i + 1) % tooltipTexts.length;
+          return tooltipTexts[next];
         });
-        setTooltipKey((prev) => prev + 1); // Increment key to reset animation
-
-        // Schedule next rotation
-        tooltipTimeoutRef.current = setTimeout(rotateTooltipText, 5000);
+        setTooltipKey((prev) => prev + 1);
+        tooltipTimeoutRef.current = setTimeout(rotate, 5000);
       };
-
-      // Start rotation
-      tooltipTimeoutRef.current = setTimeout(rotateTooltipText, 5000);
+      tooltipTimeoutRef.current = setTimeout(rotate, 5000);
     };
-
     startTooltipRotation();
-
-    // Cleanup on unmount
     return () => {
-      if (tooltipTimeoutRef.current) {
-        clearTimeout(tooltipTimeoutRef.current);
-      }
+      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
     };
   }, [isOpen]);
 
-  // Force scroll to bottom when batch loading completes
   useEffect(() => {
     if (!batchedMessages && messages.length > 0) {
-      // Batch loading just completed
-      setTimeout(() => {
-        forceScrollToBottom();
-      }, 300);
+      setTimeout(() => forceScrollToBottom(), 300);
     }
   }, [batchedMessages, messages.length]);
 
-  // Socket.IO connection for real-time admin messages
+  // socket.io
   useEffect(() => {
     if (!apiKey) return;
 
-    console.log(
-      "[WIDGET] Initializing Socket.IO connection for real-time admin messages"
-    );
-
-    // Create socket connection
     const socketInstance = io(
       import.meta.env.VITE_SOCKET_URL ||
         "https://api.bayshorecommunication.org",
@@ -793,215 +426,134 @@ const ChatBot: React.FC<ChatBotProps> = ({
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
-        auth: {
-          apiKey: apiKey,
-        },
-        query: {
-          apiKey: apiKey,
-        },
+        auth: { apiKey },
+        query: { apiKey },
         forceNew: true,
       }
     );
 
     socketRef.current = socketInstance;
 
-    // Connection event handlers
     socketInstance.on("connect", () => {
-      console.log("[WIDGET] Socket connected successfully");
-      // Join organization room
       socketInstance.emit("join_room", { room: apiKey });
     });
 
-    socketInstance.on("connect_error", (error) => {
-      console.error("[WIDGET] Socket connection error:", error);
-    });
-
-    socketInstance.on("disconnect", (reason) => {
-      console.log("[WIDGET] Socket disconnected:", reason);
-    });
-
-    socketInstance.on("connection_confirmed", (data) => {
-      console.log("[WIDGET] Socket connection confirmed:", data);
-    });
-
-    socketInstance.on("room_joined", (data) => {
-      console.log("[WIDGET] Socket room joined:", data);
-    });
-
-    // Handle agent takeover events
     socketInstance.on("agent_takeover", (data) => {
-      console.log("[WIDGET] Agent takeover received:", data);
       if (data.session_id === sessionId) {
         setIsAgentMode(true);
         setAgentId(data.agent_id || null);
-
-        // Add a system message to indicate agent takeover
-        const takoverMessage: Message = {
+        const takeoverMessage: Message = {
           id: `takeover_${Date.now()}`,
           text: "👋 Hello! A live agent has joined the conversation to provide you with personalized assistance. How can we help you today?",
           sender: "bot",
           timestamp: new Date(),
         };
-        // Add takeover message while preserving welcome message at top
-        setMessages((prev) => {
-          const welcomeMessage = prev.find(
-            (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-          );
-
-          if (welcomeMessage) {
-            const otherMessages = prev.filter(
-              (msg) => !msg.id.startsWith("video_welcome_")
-            );
-            return [welcomeMessage, ...otherMessages, takoverMessage];
-          }
-
-          return [...prev, takoverMessage];
-        });
+        setMessages((prev) => [...prev, takeoverMessage]);
       }
     });
 
-    // Handle agent release events
     socketInstance.on("agent_release", (data) => {
-      console.log("[WIDGET] Agent release received:", data);
       if (data.session_id === sessionId) {
         setIsAgentMode(false);
         setAgentId(null);
-
-        // Add a system message to indicate agent release
         const releaseMessage: Message = {
           id: `release_${Date.now()}`,
           text: "🤖 Thank you for chatting with our agent! The conversation has been transferred back to your AI assistant. I'm here to help with any additional questions.",
           sender: "bot",
           timestamp: new Date(),
         };
-        // Add release message while preserving welcome message at top
-        setMessages((prev) => {
-          const welcomeMessage = prev.find(
-            (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-          );
-
-          if (welcomeMessage) {
-            const otherMessages = prev.filter(
-              (msg) => !msg.id.startsWith("video_welcome_")
-            );
-            return [welcomeMessage, ...otherMessages, releaseMessage];
-          }
-
-          return [...prev, releaseMessage];
-        });
+        setMessages((prev) => [...prev, releaseMessage]);
       }
     });
 
-    // Handle real-time admin messages
     socketInstance.on("new_message", (data) => {
-      console.log("[WIDGET] New message received:", data);
-
-      // Only process messages for this session and from agents
       if (
         data.session_id === sessionId &&
         data.message.role === "assistant" &&
         data.message.agent_id
       ) {
-        console.log("[WIDGET] Processing admin message for current session");
-
         const adminMessage: Message = {
           id: `admin_${Date.now()}`,
           text: data.message.content,
           sender: "bot",
           timestamp: new Date(data.message.timestamp),
         };
-
-        // Add admin message while preserving welcome message at top
-        setMessages((prev) => {
-          const welcomeMessage = prev.find(
-            (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-          );
-
-          if (welcomeMessage) {
-            const otherMessages = prev.filter(
-              (msg) => !msg.id.startsWith("video_welcome_")
-            );
-            return [welcomeMessage, ...otherMessages, adminMessage];
-          }
-
-          return [...prev, adminMessage];
-        });
-
-        // Stop typing animation if it's running
+        setMessages((prev) => [...prev, adminMessage]);
         setIsTyping(false);
       }
     });
 
-    // Cleanup on unmount
     return () => {
-      console.log("[WIDGET] Cleaning up Socket.IO connection");
       socketInstance.disconnect();
     };
   }, [apiKey, sessionId]);
 
-  // Handle messages from parent window (for testing)
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === "getSocketStatus") {
-        // Respond with Socket.IO connection status
-        const connected = socketRef.current?.connected || false;
-        window.parent.postMessage(
-          {
-            type: "socketStatus",
-            connected: connected,
-          },
-          "*"
-        );
-      } else if (event.data.type === "testConnection") {
-        window.parent.postMessage(
-          {
-            type: "connectionTest",
-            message: "Connection successful",
-          },
-          "*"
-        );
-      } else if (event.data.type === "testInstantReplies") {
-        window.parent.postMessage(
-          {
-            type: "instantReplies",
-            messages: "Test completed",
-          },
-          "*"
-        );
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  // Track user interactions
   const handleUserInteraction = () => {
-    // setLastInteractionTime(Date.now());
-    // setHasInteracted(true);
-
-    // Mark user as visited on first interaction (but don't prevent video if they haven't seen it)
     if (isNewUser) {
       localStorage.setItem("chatbot_has_visited", "true");
-      // Don't set isNewUser to false here - let video logic handle that
+      setIsNewUser(false);
     }
   };
 
-  // Fetch instant replies when chat opens
+  useEffect(() => {
+    console.log(
+      "🎯 useEffect triggered - apiKey:",
+      apiKey,
+      "welcomeApiBaseUrl:",
+      welcomeApiBaseUrl
+    );
+    if (apiKey) {
+      console.log("✅ Calling fetchWelcomeMessage with apiKey:", apiKey);
+      fetchWelcomeMessage();
+    } else {
+      console.log("❌ No apiKey provided, using fallback");
+      fetchWelcomeMessage();
+    }
+  }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage]);
+
   useEffect(() => {
     if (isOpen && apiKey) {
-      console.log("🔄 Fetching instant replies...", {
-        apiKey: apiKey?.substring(0, 10) + "...",
-      });
-      // Reset instant replies when chat opens
       setShowInstantReplies(false);
-      fetchInstantReplies().then((success) => {
-        console.log("✅ Instant replies fetch result:", success);
-      });
+      fetchInstantReplies().then(() => {});
     }
   }, [isOpen, apiKey]);
 
-  // Base message sending function
+  const fetchInstantReplies = async () => {
+    try {
+      const apiUrl = getNormalizedApiBase();
+      const response = await fetch(`${apiUrl}/api/instant-reply/`, {
+        headers: {
+          "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+        },
+      });
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      if (data?.status === "success" && data?.data?.isActive) {
+        const msgs: InstantReplyMessage[] = (data.data.messages || []).sort(
+          (a: InstantReplyMessage, b: InstantReplyMessage) => a.order - b.order
+        );
+        if (msgs.length > 0) {
+          setInstantReplies(msgs);
+          setShowInstantReplies(true);
+          return true;
+        }
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  // helpers
+  const convertToMessages = (history: ConversationMessage[]): Message[] =>
+    history.map((item, index) => ({
+      id: index.toString(),
+      text: item.content,
+      sender: item.role === "user" ? "user" : "bot",
+      timestamp: new Date(),
+    }));
+
   const sendMessage = async (text: string) => {
     handleUserInteraction();
 
@@ -1011,97 +563,36 @@ const ChatBot: React.FC<ChatBotProps> = ({
       sender: "user",
       timestamp: new Date(),
     };
-
-    // Add user message while preserving welcome message at top
-    setMessages((prev) => {
-      const welcomeMessage = prev.find(
-        (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-      );
-
-      if (welcomeMessage) {
-        // Remove welcome message from current position and add it back at the top
-        const otherMessages = prev.filter(
-          (msg) => !msg.id.startsWith("video_welcome_")
-        );
-        return [welcomeMessage, ...otherMessages, newUserMessage];
-      }
-
-      return [...prev, newUserMessage];
-    });
+    setMessages((prev) => [...prev, newUserMessage]);
     setBatchedMessages(false);
     setIsTyping(true);
 
     try {
       const response = await sendMessageToApi(text, sessionId);
+      if (response.mode) setCurrentMode(response.mode as BotMode);
 
-      if (response.mode) {
-        setCurrentMode(response.mode as BotMode);
-      }
-
-      // Check if the response indicates agent mode from the API
       const responseAgentMode =
         response.user_data?.agent_mode ||
         response.agent_mode ||
         (response.answer && response.answer.includes("agent"));
-
-      if (responseAgentMode && !isAgentMode) {
-        setIsAgentMode(true);
-      }
+      if (responseAgentMode && !isAgentMode) setIsAgentMode(true);
 
       if (response.user_data) {
         if (messages.length <= 1) {
           const historyMessages = convertToMessages(
             response.user_data.conversation_history
           );
-
-          // Preserve video welcome message if it exists and user is new
-          const videoWelcomeMessage = messages.find(
-            (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-          );
-
-          if (videoWelcomeMessage && isNewUser) {
-            // Add video welcome message at the beginning of conversation history
-            setMessages([videoWelcomeMessage, ...historyMessages]);
-          } else {
-            setMessages(historyMessages);
-          }
-        } else {
-          // Check if we're in agent mode and handle accordingly
-          if (isAgentMode) {
-            // If in agent mode, don't show any automatic message - agent will respond when ready
-            // Just store the user message and wait for agent response
-          } else {
-            // Normal AI response when not in agent mode
-            const botMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              text: response.answer,
-              sender: "bot",
-              timestamp: new Date(),
-            };
-
-            const appointmentSlots = parseAppointmentSlots(response.answer);
-            if (appointmentSlots) {
-              botMessage.appointmentSlots = appointmentSlots;
-            }
-
-            // Always preserve welcome message at the top
-            setMessages((prev) => {
-              const welcomeMessage = prev.find(
-                (msg) =>
-                  msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-              );
-
-              if (welcomeMessage) {
-                // Remove welcome message from current position and add it back at the top
-                const otherMessages = prev.filter(
-                  (msg) => !msg.id.startsWith("video_welcome_")
-                );
-                return [welcomeMessage, ...otherMessages, botMessage];
-              }
-
-              return [...prev, botMessage];
-            });
-          }
+          setMessages(historyMessages);
+        } else if (!isAgentMode) {
+          const botMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: response.answer,
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          const appointmentSlots = parseAppointmentSlots(response.answer);
+          if (appointmentSlots) botMessage.appointmentSlots = appointmentSlots;
+          setMessages((prev) => [...prev, botMessage]);
         }
       }
     } catch (error) {
@@ -1111,114 +602,39 @@ const ChatBot: React.FC<ChatBotProps> = ({
         sender: "bot",
         timestamp: new Date(),
       };
-
-      // Always preserve welcome message at the top even for error messages
-      setMessages((prev) => {
-        const welcomeMessage = prev.find(
-          (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-        );
-
-        if (welcomeMessage) {
-          const otherMessages = prev.filter(
-            (msg) => !msg.id.startsWith("video_welcome_")
-          );
-          return [welcomeMessage, ...otherMessages, errorMessage];
-        }
-
-        return [...prev, errorMessage];
-      });
-      console.error("Error sending message:", error);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  // Handle instant reply message click - DISABLED: now handled by widget script
-  // const handleInstantReplyClick = (message: string) => {
-  //     handleUserInteraction();
-
-  //     if (!isOpen) {
-  //         setIsOpen(true);
-  //     }
-
-  //     setTimeout(() => {
-  //         sendMessage(message);
-  //     }, 300);
-  // };
-
-  const toggleChat = () => {
-    const wasOpen = isOpen;
-    setIsOpen(!isOpen);
-    setShowTooltip(false);
-
-    // When opening chat, reset fetched flag to trigger history fetch
-    if (!wasOpen) {
-      setHistoryFetched(false);
-
-      // Reset video state when opening chat (but only for new users)
-      if (isNewUser) {
-        setVideoEnded(false);
-        setShowVideo(false);
-
-        // Ensure welcome message is shown for new users
-        setTimeout(() => {
-          setMessages((prev) => {
-            const hasWelcomeMessage = prev.some((msg) =>
-              msg.id.startsWith("video_welcome_")
-            );
-
-            if (!hasWelcomeMessage) {
-              const welcomeMessage: Message = {
-                id: `video_welcome_${Date.now()}`,
-                text: getWelcomeMessage(),
-                sender: "bot",
-                timestamp: new Date(),
-              };
-              return [welcomeMessage];
-            }
-            return prev;
-          });
-        }, 100);
-      }
-
-      // Force scroll to bottom after opening
-      setTimeout(() => {
-        forceScrollToBottom();
-      }, 800); // Longer delay to ensure everything has loaded
-    }
-
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-    }
-
-    // Call the onToggleChat callback if provided
-    if (onToggleChat) {
-      onToggleChat();
-    }
+  const handleInstantReplyClick = (message: string) => {
+    const userMessage: Message = {
+      id: `instant_reply_${Date.now()}`,
+      text: message,
+      sender: "user",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    sendMessage(message);
   };
 
   const handleOptionClick = (option: string) => {
-    // When an option is clicked, send it as a user message
     sendMessage(option);
   };
 
   const handleSlotSelect = (slot: AppointmentSlot) => {
-    // Update the last bot message to show confirmation UI
     setMessages((prev) => {
-      const lastBotMessageIndex = [...prev]
-        .reverse()
-        .findIndex((msg) => msg.sender === "bot");
-      if (lastBotMessageIndex === -1) return prev;
-
-      const actualIndex = prev.length - 1 - lastBotMessageIndex;
-      const updatedMessages = [...prev];
-      updatedMessages[actualIndex] = {
-        ...updatedMessages[actualIndex],
+      const idx = [...prev].reverse().findIndex((m) => m.sender === "bot");
+      if (idx === -1) return prev;
+      const actual = prev.length - 1 - idx;
+      const updated = [...prev];
+      updated[actual] = {
+        ...updated[actual],
         selectedSlot: slot,
         awaitingConfirmation: true,
       };
-
-      return updatedMessages;
+      return updated;
     });
   };
 
@@ -1229,22 +645,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       sender: "user",
       timestamp: new Date(),
     };
-
-    // Add slot selection message while preserving welcome message at top
-    setMessages((prev) => {
-      const welcomeMessage = prev.find(
-        (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-      );
-
-      if (welcomeMessage) {
-        const otherMessages = prev.filter(
-          (msg) => !msg.id.startsWith("video_welcome_")
-        );
-        return [welcomeMessage, ...otherMessages, slotSelectionMessage];
-      }
-
-      return [...prev, slotSelectionMessage];
-    });
+    setMessages((prev) => [...prev, slotSelectionMessage]);
     setIsTyping(true);
 
     try {
@@ -1254,29 +655,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
         day: slot.day,
         time: slot.time,
       });
-
       const confirmationMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: response.answer,
         sender: "bot",
         timestamp: new Date(),
       };
-
-      // Add confirmation message while preserving welcome message at top
-      setMessages((prev) => {
-        const welcomeMessage = prev.find(
-          (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-        );
-
-        if (welcomeMessage) {
-          const otherMessages = prev.filter(
-            (msg) => !msg.id.startsWith("video_welcome_")
-          );
-          return [welcomeMessage, ...otherMessages, confirmationMessage];
-        }
-
-        return [...prev, confirmationMessage];
-      });
+      setMessages((prev) => [...prev, confirmationMessage]);
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -1284,27 +669,55 @@ const ChatBot: React.FC<ChatBotProps> = ({
         sender: "bot",
         timestamp: new Date(),
       };
-
-      // Add error message while preserving welcome message at top
-      setMessages((prev) => {
-        const welcomeMessage = prev.find(
-          (msg) => msg.id.startsWith("video_welcome_") && msg.sender === "bot"
-        );
-
-        if (welcomeMessage) {
-          const otherMessages = prev.filter(
-            (msg) => !msg.id.startsWith("video_welcome_")
-          );
-          return [welcomeMessage, ...otherMessages, errorMessage];
-        }
-
-        return [...prev, errorMessage];
-      });
-      console.error("Error confirming appointment:", error);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
   };
+
+  // intro messages in normal flow (video autoplay + welcome)
+  const introVideoMessage: Message | null = useMemo(
+    () =>
+      settings?.video_url
+        ? {
+            id: "__intro_video__",
+            text: settings.video_url.startsWith("http")
+              ? settings.video_url
+              : `${import.meta.env.VITE_API_BASE_URL}${settings.video_url}`,
+            sender: "bot",
+            timestamp: new Date(),
+            // @ts-expect-error: allow metadata
+            metadata: { type: "video" },
+          }
+        : null,
+    [settings?.video_url]
+  );
+
+  const resolvedWelcomeText = useMemo(() => {
+    const result =
+      (welcomeMessage && welcomeMessage.trim()) || getDefaultWelcome();
+    console.log("🎯 Welcome message state:", welcomeMessage);
+    console.log("🎯 Resolved welcome text:", result);
+    return result;
+  }, [welcomeMessage, getDefaultWelcome]);
+
+  const inlineWelcomeMessage: Message = useMemo(
+    () => ({
+      id: "__welcome__",
+      text: resolvedWelcomeText,
+      sender: "bot",
+      timestamp: new Date(),
+    }),
+    [resolvedWelcomeText]
+  );
+
+  const displayMessages: Message[] = useMemo(
+    () =>
+      introVideoMessage
+        ? [introVideoMessage, inlineWelcomeMessage, ...messages]
+        : [inlineWelcomeMessage, ...messages],
+    [introVideoMessage, inlineWelcomeMessage, messages]
+  );
 
   return (
     <>
@@ -1347,25 +760,44 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
         {!embedded && (
           <motion.button
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors"
-            onClick={toggleChat}
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
+            onClick={() => {
+              const wasOpen = isOpen;
+              setIsOpen(!isOpen);
+              setShowTooltip(false);
+              if (!wasOpen) {
+                setHistoryFetched(false);
+                setTimeout(() => forceScrollToBottom(), 800);
+              }
+              if (tooltipTimeoutRef.current)
+                clearTimeout(tooltipTimeoutRef.current);
+              onToggleChat?.();
+            }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 sm:h-8 sm:w-8"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            {settings?.avatarUrl ? (
+              <img
+                src={settings.avatarUrl}
+                alt="Assistant"
+                className="w-full h-full object-cover"
               />
-            </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 sm:h-8 sm:w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
+              </svg>
+            )}
           </motion.button>
         )}
 
@@ -1376,7 +808,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 embedded
                   ? "h-full w-full"
                   : "h-[calc(100vh-2rem)] sm:h-[500px] sm:w-[350px] md:w-96"
-              } bg-gray-800 rounded-lg shadow-xl overflow-hidden  text-gray-100 ${
+              } bg-gray-800 rounded-lg shadow-xl overflow-hidden text-gray-100 ${
                 embedded
                   ? "fixed inset-0 m-0 p-0 rounded-none"
                   : "fixed bottom-0 right-0 sm:relative"
@@ -1388,13 +820,25 @@ const ChatBot: React.FC<ChatBotProps> = ({
               ref={chatBodyRef}
             >
               <ChatHeader
-                toggleChat={toggleChat}
+                toggleChat={() => {
+                  const wasOpen = isOpen;
+                  setIsOpen(!isOpen);
+                  setShowTooltip(false);
+                  if (!wasOpen) {
+                    setHistoryFetched(false);
+                    setTimeout(() => forceScrollToBottom(), 800);
+                  }
+                  if (tooltipTimeoutRef.current)
+                    clearTimeout(tooltipTimeoutRef.current);
+                  onToggleChat?.();
+                }}
                 currentMode={currentMode}
                 isLoading={isLoading || isPositioningScroll}
                 settings={settings}
                 isAgentMode={isAgentMode}
                 agentId={agentId}
               />
+
               {isLoading || isPositioningScroll ? (
                 <motion.div
                   className="flex-1 flex items-center justify-center bg-gray-900"
@@ -1411,50 +855,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 </motion.div>
               ) : (
                 <>
-                  {/* Video Overlay */}
-                  <AnimatePresence>
-                    {showVideo && settings?.video_url && (
-                      <motion.div
-                        className="absolute inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <div className="relative max-w-md w-full mx-4">
-                          <video
-                            ref={videoRef}
-                            className="w-full rounded-lg shadow-lg"
-                            onEnded={handleVideoEnd}
-                            onError={handleVideoEnd}
-                            muted
-                            playsInline
-                          >
-                            <source
-                              src={
-                                settings.video_url?.startsWith("http")
-                                  ? settings.video_url
-                                  : `${import.meta.env.VITE_API_BASE_URL}${
-                                      settings.video_url
-                                    }`
-                              }
-                              type="video/mp4"
-                            />
-                            Your browser does not support the video tag.
-                          </video>
-                          <button
-                            onClick={handleVideoEnd}
-                            className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-70 transition-colors"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
                   <ChatBody
-                    messages={messages}
+                    messages={displayMessages}
                     isTyping={isTyping}
                     onOptionClick={handleOptionClick}
                     onSlotSelect={handleSlotSelect}
@@ -1464,9 +866,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
                     instantReplies={instantReplies}
                     showInstantReplies={showInstantReplies}
                     onInstantReplyClick={handleInstantReplyClick}
+                    settings={settings}
                   />
                 </>
               )}
+
               <motion.div
                 className={embedded ? "mb-0 pb-0" : ""}
                 initial={{ opacity: 0, y: 20 }}
@@ -1483,14 +887,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
           )}
         </AnimatePresence>
       </motion.div>
-
-      {/* Show InstantReplyPopup in both embedded and non-embedded modes */}
-      {/* <InstantReplyPopup
-                messages={instantReplies}
-                isOpen={(!isOpen || embedded) && showInstantReplies}
-                onMessageClick={handleInstantReplyClick}
-                embedded={embedded}
-            /> */}
     </>
   );
 };
