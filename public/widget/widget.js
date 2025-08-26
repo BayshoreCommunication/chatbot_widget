@@ -685,7 +685,7 @@
                   if (!isOpen) { // Only show if chat is not open
                     showInstantReply(messageObj.message, 4000); // Show for 4 seconds
                   } else {
-                    console.log(`❌ Message ${index + 1} skipped (chat is open)`);
+                    console.log(`✅ Message ${index + 1} will be shown inside chat interface`);
                   }
                 }, currentTime);
 
