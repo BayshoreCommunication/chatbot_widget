@@ -160,18 +160,15 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       <div className="space-y-4">
         {/* Instant Replies Section */}
         <AnimatePresence>
-          {showInstantReplies && instantReplies.length > 0 && (
-            <motion.div
-              className="space-y-3"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="text-center text-sm text-gray-400 mb-2">
-                Quick responses:
-              </div>
-              {instantReplies.map((reply, index) => (
+          {/* {showInstantReplies && instantReplies.length > 0 && ( */}
+          <motion.div
+          // className="space-y-3"
+          // initial={{ opacity: 0, y: -20 }}
+          // animate={{ opacity: 1, y: 0 }}
+          // exit={{ opacity: 0, y: -20 }}
+          // transition={{ duration: 0.3 }}
+          >
+            {/* {instantReplies.map((reply, index) => (
                 <motion.div
                   key={`instant-reply-${index}`}
                   initial={{ opacity: 0, x: -20 }}
@@ -184,14 +181,14 @@ const ChatBody: React.FC<ChatBodyProps> = ({
                 >
                   <button
                     onClick={() => onInstantReplyClick?.(reply.message)}
-                    className="max-w-[75%] bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg p-3 text-sm transition-colors duration-200 cursor-pointer text-left"
+                    className="max-w-[75%] bg-red-700 hover:bg-indigo-700 text-white rounded-lg p-3 text-sm transition-colors duration-200 cursor-pointer text-left"
                   >
                     {reply.message}
                   </button>
                 </motion.div>
-              ))}
-            </motion.div>
-          )}
+              ))} */}
+          </motion.div>
+          {/* )} */}
         </AnimatePresence>
 
         <AnimatePresence initial={false}>

@@ -143,14 +143,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
   }, []);
 
   const getDefaultWelcome = useCallback(() => {
-    const botName = settings?.name || "AI Assistant";
-    return (
-      `👋 Welcome! I'm your ${botName}. I can help you with:\n` +
-      `• Scheduling appointments\n` +
-      `• Answering questions about our services\n` +
-      `• Providing information and support`
-    );
-  }, [settings?.name]);
+    return "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you gdfg.";
+  }, []);
 
   const fetchWelcomeMessage = useCallback(async () => {
     try {
@@ -173,9 +167,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
       if (!response.ok) {
         console.log("❌ Welcome message API failed:", response.status);
-        setWelcomeMessage(
-          "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you."
-        );
+        setWelcomeMessage("Welcome message not found");
         return;
       }
 
@@ -516,9 +508,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
   useEffect(() => {
     if (isOpen && apiKey) {
       setShowInstantReplies(false);
-      fetchInstantReplies().then(() => {});
+      // Only fetch instant replies if we don't have a welcome message yet
+      if (!welcomeMessage) {
+        fetchInstantReplies().then(() => {});
+      }
     }
-  }, [isOpen, apiKey]);
+  }, [isOpen, apiKey, welcomeMessage]);
 
   const fetchInstantReplies = async () => {
     try {
@@ -535,8 +530,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
         const msgs: InstantReplyMessage[] = (data.data.messages || []).sort(
           (a: InstantReplyMessage, b: InstantReplyMessage) => a.order - b.order
         );
-        if (msgs.length > 0) {
-          setInstantReplies(msgs);
+        // Filter out any instant replies that match the welcome message
+        const filteredMsgs = msgs.filter(
+          (msg) =>
+            msg.message !==
+            "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist youdfdsf."
+        );
+        if (filteredMsgs.length > 0) {
+          setInstantReplies(filteredMsgs);
           setShowInstantReplies(true);
           return true;
         }
