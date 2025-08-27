@@ -134,7 +134,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const getNormalizedApiBase = useCallback(() => {
     const raw = (
-      import.meta.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
+      import.meta.env.VITE_API_BASE_URL ||
+      "https://api.bayshorecommunication.org"
     ).trim();
     const cleaned = raw.replace(/%0A|\n|\r/g, "").replace(/\s+/g, "");
     const noTrailingSlash = cleaned.replace(/\/+$/, "");
@@ -242,7 +243,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
     message: string,
     sessionId: string
   ): Promise<ChatResponse> => {
-    const apiUrl = customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
+    const apiUrl =
+      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -265,7 +267,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
     time: string;
   }): Promise<ChatResponse> => {
     const message = `I want to confirm my appointment for ${request.day} at ${request.time} (ID: ${request.slotId})`;
-    const apiUrl = customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
+    const apiUrl =
+      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -410,17 +413,17 @@ const ChatBot: React.FC<ChatBotProps> = ({
     if (!apiKey) return;
 
     const socketUrl =
-      import.meta.env.VITE_SOCKET_URL || "https://api.bayshorecommunication.org";
+      import.meta.env.VITE_SOCKET_URL ||
+      "https://api.bayshorecommunication.org";
     console.log("🔌 Connecting to Socket.IO at:", socketUrl);
 
     const socketInstance = io(socketUrl, {
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"], // Try polling first, then websocket
       timeout: 15000,
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 2000,
       reconnectionDelayMax: 5000,
-      maxReconnectionAttempts: 10,
       auth: { apiKey },
       query: { apiKey },
       forceNew: true,
