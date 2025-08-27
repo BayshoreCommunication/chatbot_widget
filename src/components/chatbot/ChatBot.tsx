@@ -134,7 +134,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const getNormalizedApiBase = useCallback(() => {
     const raw = (
-      import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+      import.meta.env.VITE_API_BASE_URL ||
+      "https://api.bayshorecommunication.org"
     ).trim();
     const cleaned = raw.replace(/%0A|\n|\r/g, "").replace(/\s+/g, "");
     const noTrailingSlash = cleaned.replace(/\/+$/, "");
