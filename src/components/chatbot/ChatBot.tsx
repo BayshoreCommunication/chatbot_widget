@@ -134,8 +134,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const getNormalizedApiBase = useCallback(() => {
     const raw = (
-      import.meta.env.VITE_API_BASE_URL ||
-      "https://api.bayshorecommunication.org"
+      import.meta.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
     ).trim();
     const cleaned = raw.replace(/%0A|\n|\r/g, "").replace(/\s+/g, "");
     const noTrailingSlash = cleaned.replace(/\/+$/, "");
@@ -243,8 +242,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     message: string,
     sessionId: string
   ): Promise<ChatResponse> => {
-    const apiUrl =
-      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
+    const apiUrl = customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -267,8 +265,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     time: string;
   }): Promise<ChatResponse> => {
     const message = `I want to confirm my appointment for ${request.day} at ${request.time} (ID: ${request.slotId})`;
-    const apiUrl =
-      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
+    const apiUrl = customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -412,28 +409,54 @@ const ChatBot: React.FC<ChatBotProps> = ({
   useEffect(() => {
     if (!apiKey) return;
 
-    const socketInstance = io(
-      import.meta.env.VITE_SOCKET_URL ||
-        "https://api.bayshorecommunication.org",
-      {
-        transports: ["websocket", "polling"],
-        timeout: 10000,
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        auth: { apiKey },
-        query: { apiKey },
-        forceNew: true,
-      }
-    );
+    const socketUrl =
+      import.meta.env.VITE_SOCKET_URL || "https://api.bayshorecommunication.org";
+    console.log("🔌 Connecting to Socket.IO at:", socketUrl);
+
+    const socketInstance = io(socketUrl, {
+      transports: ["websocket", "polling"],
+      timeout: 15000,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      maxReconnectionAttempts: 10,
+      auth: { apiKey },
+      query: { apiKey },
+      forceNew: true,
+      upgrade: true,
+      rememberUpgrade: true,
+    });
 
     socketRef.current = socketInstance;
 
     socketInstance.on("connect", () => {
+      console.log("✅ Socket.IO connected successfully");
       socketInstance.emit("join_room", { room: apiKey });
     });
 
+    socketInstance.on("connect_error", (error) => {
+      console.error("❌ Socket.IO connection error:", error);
+    });
+
+    socketInstance.on("disconnect", (reason) => {
+      console.log("🔌 Socket.IO disconnected:", reason);
+    });
+
+    socketInstance.on("reconnect", (attemptNumber) => {
+      console.log("🔄 Socket.IO reconnected after", attemptNumber, "attempts");
+    });
+
+    socketInstance.on("reconnect_error", (error) => {
+      console.error("❌ Socket.IO reconnection error:", error);
+    });
+
+    socketInstance.on("connection_confirmed", (data) => {
+      console.log("✅ Socket.IO connection confirmed:", data);
+    });
+
     socketInstance.on("agent_takeover", (data) => {
+      console.log("👤 Agent takeover event received:", data);
       if (data.session_id === sessionId) {
         setIsAgentMode(true);
         setAgentId(data.agent_id || null);
@@ -448,6 +471,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     });
 
     socketInstance.on("agent_release", (data) => {
+      console.log("🤖 Agent release event received:", data);
       if (data.session_id === sessionId) {
         setIsAgentMode(false);
         setAgentId(null);
@@ -462,6 +486,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     });
 
     socketInstance.on("new_message", (data) => {
+      console.log("📨 New message event received:", data);
       if (
         data.session_id === sessionId &&
         data.message.role === "assistant" &&
@@ -479,6 +504,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     });
 
     return () => {
+      console.log("🔌 Cleaning up Socket.IO connection");
       socketInstance.disconnect();
     };
   }, [apiKey, sessionId]);

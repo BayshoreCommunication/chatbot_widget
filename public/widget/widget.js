@@ -715,7 +715,7 @@
     // Listen for messages from the iframe
     window.addEventListener('message', (event) => {
       // Verify origin for security
-      const widgetUrl = window.CHATBOT_WIDGET_URL || 'http://localhost:5174';
+      const widgetUrl = window.CHATBOT_WIDGET_URL || 'https://aibotwidget.bayshorecommunication.org';
     if (event.origin !== widgetUrl) {
         return;
       }

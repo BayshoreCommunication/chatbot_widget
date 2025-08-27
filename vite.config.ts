@@ -35,7 +35,8 @@ export default defineConfig({
       process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
     ),
     "import.meta.env.VITE_WIDGET_EMBED_URL": JSON.stringify(
-      process.env.VITE_WIDGET_URL || "https://aibotwidget.bayshorecommunication.org"
+      process.env.VITE_WIDGET_URL ||
+        "https://aibotwidget.bayshorecommunication.org"
     ),
   },
 });

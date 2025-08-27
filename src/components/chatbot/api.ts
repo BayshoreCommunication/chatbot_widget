@@ -64,14 +64,43 @@ export class ChatApi {
       );
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        console.warn(
+          `Chat history API returned ${response.status} for session ${sessionId}`
+        );
+        // Return empty conversation for new users instead of throwing error
+        return {
+          answer: "",
+          mode: "faq",
+          language: "en",
+          user_data: {
+            conversation_history: [],
+            returning_user: false,
+          },
+          suggested_faqs: [],
+          agent_mode: false,
+          agent_id: null,
+          agent_takeover_at: null,
+        };
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
       console.error("Error fetching conversation history:", error);
-      throw error;
+      // Return empty conversation for new users instead of throwing error
+      return {
+        answer: "",
+        mode: "faq",
+        language: "en",
+        user_data: {
+          conversation_history: [],
+          returning_user: false,
+        },
+        suggested_faqs: [],
+        agent_mode: false,
+        agent_id: null,
+        agent_takeover_at: null,
+      };
     }
   }
 
