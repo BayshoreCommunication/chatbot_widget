@@ -548,7 +548,7 @@
     iframe.className = 'chatbot-iframe';
 
     // Set the iframe source to load the chatbot with the apiKey parameter
-    const widgetUrl = window.CHATBOT_WIDGET_URL || 'http://localhost:5174';
+    const widgetUrl = window.CHATBOT_WIDGET_URL || 'https://aibotwidget.bayshorecommunication.org';
     const chatbotUrl = new URL(`${widgetUrl}/chatbot-embed`);
     chatbotUrl.searchParams.append('apiKey', widgetConfig.apiKey);
     chatbotUrl.searchParams.append('isWidget', 'true');
@@ -655,7 +655,8 @@
       }
 
       try {
-        const response = await fetch('https://api.bayshorecommunication.org/api/instant-reply/', {
+        const apiUrl = window.CHATBOT_API_URL || 'https://api.bayshorecommunication.org';
+        const response = await fetch(`${apiUrl}/api/instant-reply`, {
           headers: {
             'X-API-Key': widgetConfig.apiKey
           }

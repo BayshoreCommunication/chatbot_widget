@@ -548,7 +548,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const fetchInstantReplies = async () => {
     try {
       const apiUrl = getNormalizedApiBase();
-      const response = await fetch(`${apiUrl}/api/instant-reply/`, {
+      const response = await fetch(`${apiUrl}/api/instant-reply`, {
         headers: {
           "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
         },

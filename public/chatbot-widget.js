@@ -493,7 +493,7 @@
       let instantReplyLoopRunning = false;
       const iframe = document.createElement("iframe");
       iframe.className = "chatbot-iframe";
-      const widgetUrl = window.CHATBOT_WIDGET_URL || "http://localhost:5174";
+      const widgetUrl = window.CHATBOT_WIDGET_URL || "https://aibotwidget.bayshorecommunication.org";
       const chatbotUrl = new URL(`${widgetUrl}/chatbot-embed`);
       chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
       chatbotUrl.searchParams.append("isWidget", "true");
@@ -555,7 +555,8 @@
           return;
         }
         try {
-          const response = await fetch("https://api.bayshorecommunication.org/api/instant-reply/", {
+          const apiUrl = window.CHATBOT_API_URL || "https://api.bayshorecommunication.org";
+          const response = await fetch(`${apiUrl}/api/instant-reply`, {
             headers: {
               "X-API-Key": widgetConfig.apiKey
             }
@@ -594,7 +595,7 @@
         }
       }
       window.addEventListener("message", (event) => {
-        const widgetUrl2 = window.CHATBOT_WIDGET_URL || "http://localhost:5174";
+        const widgetUrl2 = window.CHATBOT_WIDGET_URL || "https://aibotwidget.bayshorecommunication.org";
         if (event.origin !== widgetUrl2) {
           return;
         }
