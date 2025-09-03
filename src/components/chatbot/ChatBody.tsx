@@ -245,9 +245,9 @@ const ChatBody: React.FC<ChatBodyProps> = ({
                 }
               }}
             >
-              <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center">
+{/*               <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center">
                 <RiRobot3Line className="text-indigo-300" />
-              </div>
+              </div> */}
               <div className="flex space-x-1">
                 <div
                   className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
