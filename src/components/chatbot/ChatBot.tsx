@@ -152,7 +152,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       const base =
         (welcomeApiBaseUrl && welcomeApiBaseUrl.trim().replace(/\/+$/, "")) ||
         getNormalizedApiBase();
-      const url = `${base}/api/chatbot/welcome-message`;
+      const url = `${base}/api/instant-reply`;
 
       console.log("🔍 Fetching welcome message from:", url);
       console.log(
@@ -168,7 +168,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
       if (!response.ok) {
         console.log("❌ Welcome message API failed:", response.status);
-        setWelcomeMessage("Welcome message not found");
+        setWelcomeMessage("Welcome message not found3");
         return;
       }
 
@@ -180,11 +180,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
         setWelcomeMessage(String(data.data.message));
       } else {
         console.log("⚠️ No welcome message in response");
-        setWelcomeMessage("Welcome message not found");
+        setWelcomeMessage("Welcome message not found2");
       }
     } catch (error) {
       console.log("💥 Error fetching welcome message:", error);
-      setWelcomeMessage("Welcome message not found");
+      setWelcomeMessage("Welcome message not found1");
     }
   }, [apiKey, welcomeApiBaseUrl, getNormalizedApiBase]);
 
