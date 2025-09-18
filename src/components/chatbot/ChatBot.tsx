@@ -144,7 +144,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   }, []);
 
   const getDefaultWelcome = useCallback(() => {
-    return "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you gdfg.";
+    return "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.";
   }, []);
 
   const fetchWelcomeMessage = useCallback(async () => {
@@ -184,7 +184,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       }
     } catch (error) {
       console.log("💥 Error fetching welcome message:", error);
-      setWelcomeMessage("Welcome message not found1");
+      setWelcomeMessage("Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.");
     }
   }, [apiKey, welcomeApiBaseUrl, getNormalizedApiBase]);
 
