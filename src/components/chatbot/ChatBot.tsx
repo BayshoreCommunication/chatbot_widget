@@ -168,7 +168,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
       if (!response.ok) {
         console.log("❌ Welcome message API failed:", response.status);
-        setWelcomeMessage("Welcome message not found3");
+        setWelcomeMessage("Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.");
         return;
       }
 
@@ -180,7 +180,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
         setWelcomeMessage(String(data.data.message));
       } else {
         console.log("⚠️ No welcome message in response");
-        setWelcomeMessage("Welcome message not found2");
+        setWelcomeMessage("Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.");
       }
     } catch (error) {
       console.log("💥 Error fetching welcome message:", error);
