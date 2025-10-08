@@ -355,15 +355,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
     if (!isOpen || historyFetched) return;
 
     const run = async () => {
-      const savedSession = localStorage.getItem("chatSessionId");
-      if (!savedSession) {
-        setHistoryFetched(true);
-        return;
-      }
-
+      // Always use in-memory sessionId to avoid race with localStorage
       setIsLoading(true);
       try {
-        const response = await getConversationHistory(savedSession);
+        const response = await getConversationHistory(sessionId);
 
         if (response.user_data && response.user_data.conversation_history) {
           if (response.user_data.agent_mode || response.agent_mode)
@@ -405,7 +400,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     };
 
     run();
-  }, [isOpen, historyFetched]);
+  }, [isOpen, historyFetched, sessionId]);
 
   useEffect(() => {
     if (batchedMessages && !isLoading) {
