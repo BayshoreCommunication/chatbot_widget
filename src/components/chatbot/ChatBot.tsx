@@ -144,7 +144,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   }, []);
 
   const getDefaultWelcome = useCallback(() => {
-    return "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.";
+    return "http://localhost:3000/";
   }, []);
 
   const fetchWelcomeMessage = useCallback(async () => {
@@ -168,7 +168,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
       if (!response.ok) {
         console.log("❌ Welcome message API failed:", response.status);
-        setWelcomeMessage("Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.");
+        setWelcomeMessage("Welcome message not found.");
         return;
       }
 
@@ -180,11 +180,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
         setWelcomeMessage(String(data.data.message));
       } else {
         console.log("⚠️ No welcome message in response");
-        setWelcomeMessage("Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.");
+        setWelcomeMessage("Welcome message not found");
       }
     } catch (error) {
       console.log("💥 Error fetching welcome message:", error);
-      setWelcomeMessage("Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.");
+      setWelcomeMessage("Welcome message not found.");
     }
   }, [apiKey, welcomeApiBaseUrl, getNormalizedApiBase]);
 
@@ -562,9 +562,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
         );
         // Filter out any instant replies that match the welcome message
         const filteredMsgs = msgs.filter(
-          (msg) =>
-            msg.message !==
-            "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist youdfdsf."
+          (msg) => msg.message !== "Welcome message not found."
         );
         if (filteredMsgs.length > 0) {
           setInstantReplies(filteredMsgs);
