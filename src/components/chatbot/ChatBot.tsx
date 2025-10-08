@@ -23,6 +23,15 @@ interface ChatbotSettings {
   leadCapture: boolean;
   avatarUrl: string;
   auto_open?: boolean;
+  intro_video?: {
+    enabled: boolean;
+    video_url: string | null;
+    video_filename: string | null;
+    autoplay: boolean;
+    duration: number;
+    show_on_first_visit: boolean;
+  };
+  // Legacy support for old video_url format
   video_url?: string;
   video_autoplay?: boolean; // ignored now; we always autoplay inline
   video_duration?: number; // ignored now; we play inline
@@ -101,6 +110,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   // welcome text
   const [welcomeMessage, setWelcomeMessage] = useState<string>("");
+  const [serverSettings, setServerSettings] = useState<ChatbotSettings | null>(
+    null
+  );
 
   // no overlay anymore; we autoplay inline in the chat flow
   // const [showVideo, setShowVideo] = useState(false);
@@ -144,7 +156,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   }, []);
 
   const getDefaultWelcome = useCallback(() => {
-    return "http://localhost:3000/";
+    return "Hello! How can I help you today?";
   }, []);
 
   const fetchWelcomeMessage = useCallback(async () => {
@@ -175,18 +187,43 @@ const ChatBot: React.FC<ChatBotProps> = ({
       const data = await response.json();
       console.log("📥 Welcome message API response:", data);
 
-      if (data?.status === "success" && data?.data?.message) {
-        console.log("✅ Setting welcome message:", data.data.message);
-        setWelcomeMessage(String(data.data.message));
+      // Prefer first instant reply message as welcome
+      const firstMessage = data?.data?.messages?.[0]?.message;
+      if (data?.status === "success" && firstMessage) {
+        console.log("✅ Setting welcome message:", firstMessage);
+        setWelcomeMessage(String(firstMessage));
       } else {
         console.log("⚠️ No welcome message in response");
-        setWelcomeMessage("Welcome message not found");
+        setWelcomeMessage(getDefaultWelcome());
       }
     } catch (error) {
       console.log("💥 Error fetching welcome message:", error);
-      setWelcomeMessage("Welcome message not found.");
+      setWelcomeMessage(getDefaultWelcome());
     }
   }, [apiKey, welcomeApiBaseUrl, getNormalizedApiBase]);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const base = getNormalizedApiBase();
+      const url = `${base}/api/chatbot/settings`;
+      console.log("🔍 Fetching organization settings from:", url);
+      const response = await fetch(url, {
+        headers: {
+          "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+        },
+      });
+      if (!response.ok) {
+        console.log("❌ Settings API failed:", response.status);
+        return;
+      }
+      const data = await response.json();
+      if (data?.status === "success" && data?.settings) {
+        setServerSettings(data.settings as ChatbotSettings);
+      }
+    } catch (e) {
+      console.log("💥 Error fetching settings:", e);
+    }
+  }, [apiKey, getNormalizedApiBase]);
 
   const parseAppointmentSlots = (
     text: string
@@ -529,11 +566,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
     if (apiKey) {
       console.log("✅ Calling fetchWelcomeMessage with apiKey:", apiKey);
       fetchWelcomeMessage();
+      fetchSettings();
     } else {
       console.log("❌ No apiKey provided, using fallback");
       fetchWelcomeMessage();
     }
-  }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage]);
+  }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
 
   useEffect(() => {
     if (isOpen && apiKey) {
@@ -707,22 +745,35 @@ const ChatBot: React.FC<ChatBotProps> = ({
   };
 
   // intro messages in normal flow (video autoplay + welcome)
-  const introVideoMessage: Message | null = useMemo(
-    () =>
-      settings?.video_url
-        ? {
-            id: "__intro_video__",
-            text: settings.video_url.startsWith("http")
-              ? settings.video_url
-              : `${import.meta.env.VITE_API_BASE_URL}${settings.video_url}`,
-            sender: "bot",
-            timestamp: new Date(),
-            // @ts-expect-error: allow metadata
-            metadata: { type: "video" },
-          }
-        : null,
-    [settings?.video_url]
-  );
+  const introVideoMessage: Message | null = useMemo(() => {
+    // Prefer nested intro_video from server settings, then legacy video_url
+    const videoUrl =
+      serverSettings?.intro_video?.enabled &&
+      serverSettings?.intro_video?.video_url
+        ? serverSettings.intro_video.video_url
+        : serverSettings?.video_url ||
+          settings?.intro_video?.video_url ||
+          settings?.video_url;
+
+    if (!videoUrl) return null;
+
+    return {
+      id: "__intro_video__",
+      text: videoUrl.startsWith("http")
+        ? videoUrl
+        : `${import.meta.env.VITE_API_BASE_URL}${videoUrl}`,
+      sender: "bot",
+      timestamp: new Date(),
+      // @ts-expect-error: allow metadata
+      metadata: { type: "video" },
+    };
+  }, [
+    serverSettings?.intro_video?.enabled,
+    serverSettings?.intro_video?.video_url,
+    serverSettings?.video_url,
+    settings?.intro_video?.video_url,
+    settings?.video_url,
+  ]);
 
   const resolvedWelcomeText = useMemo(() => {
     const result =
