@@ -259,22 +259,23 @@ const ChatBot: React.FC<ChatBotProps> = ({
   };
 
   // APIs
-  const getConversationHistory = async (
-    sessionId: string
-  ): Promise<ChatResponse> => {
-    const historyBase =
-      import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
-      "https://api.bayshorecommunication.org/api/chatbot/history";
-    const response = await fetch(`${historyBase}/${sessionId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
-      },
-    });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-    return await response.json();
-  };
+  const getConversationHistory = useCallback(
+    async (sessionId: string): Promise<ChatResponse> => {
+      const historyBase =
+        import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
+        "https://api.bayshorecommunication.org/api/chatbot/history";
+      const response = await fetch(`${historyBase}/${sessionId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+        },
+      });
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      return await response.json();
+    },
+    [apiKey]
+  );
 
   const sendMessageToApi = async (
     message: string,
@@ -327,6 +328,40 @@ const ChatBot: React.FC<ChatBotProps> = ({
   };
 
   // effects
+  // Prefetch history on mount (before first open) to avoid first-open race
+  useEffect(() => {
+    if (historyFetched) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const response = await getConversationHistory(sessionId);
+        if (cancelled) return;
+        if (response.user_data && response.user_data.conversation_history) {
+          if (response.user_data.agent_mode || response.agent_mode)
+            setIsAgentMode(true);
+          const hasAgentMessages = response.user_data.conversation_history.some(
+            (msg) =>
+              msg.metadata?.type === "agent_message" || msg.metadata?.agent_id
+          );
+          if (hasAgentMessages) setIsAgentMode(true);
+          const historyMessages = convertToMessages(
+            response.user_data.conversation_history
+          );
+          setMessages(historyMessages);
+          if (response.mode) setCurrentMode(response.mode as BotMode);
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setHistoryFetched(true);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [historyFetched, sessionId]);
+
   useEffect(() => {
     if (settings) {
       const hasVisited = localStorage.getItem("chatbot_has_visited");
