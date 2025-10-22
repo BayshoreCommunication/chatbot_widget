@@ -8,6 +8,61 @@
       settings: null
       // will store chatbot settings
     };
+    function isColorString(str) {
+      if (!str || typeof str !== "string")
+        return false;
+      if (str.startsWith("#") && (str.length === 4 || str.length === 7)) {
+        return /^#[0-9A-Fa-f]{3}$|^#[0-9A-Fa-f]{6}$/.test(str);
+      }
+      if (str.startsWith("rgb")) {
+        return true;
+      }
+      if (str.startsWith("hsl")) {
+        return true;
+      }
+      return false;
+    }
+    function darkenHex(hex, amount = 12) {
+      try {
+        const h = hex.replace("#", "");
+        const bigint = parseInt(
+          h.length === 3 ? h.split("").map((c) => c + c).join("") : h,
+          16
+        );
+        const r = Math.max(0, (bigint >> 16 & 255) - amount);
+        const g = Math.max(0, (bigint >> 8 & 255) - amount);
+        const b = Math.max(0, (bigint & 255) - amount);
+        const toHex = (n) => n.toString(16).padStart(2, "0");
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      } catch (e) {
+        return hex;
+      }
+    }
+    function resolveColors(selected) {
+      if (!selected)
+        return { primary: "#3b82f6", hover: "#2563eb", shadow: "rgba(59, 130, 246, 0.4)" };
+      if (selected.startsWith("#") && (selected.length === 4 || selected.length === 7)) {
+        const primary = darkenHex(selected, 10);
+        const hover = darkenHex(selected, 20);
+        const shadow = "rgba(0, 0, 0, 0.4)";
+        return { primary, hover, shadow };
+      }
+      const predefinedColors = {
+        black: { primary: "#000000", hover: "#1a1a1a", shadow: "rgba(0, 0, 0, 0.4)" },
+        red: { primary: "#ef4444", hover: "#dc2626", shadow: "rgba(239, 68, 68, 0.4)" },
+        orange: { primary: "#f97316", hover: "#ea580c", shadow: "rgba(249, 115, 22, 0.4)" },
+        blue: { primary: "#3b82f6", hover: "#2563eb", shadow: "rgba(59, 130, 246, 0.4)" },
+        pink: { primary: "#ec4899", hover: "#db2777", shadow: "rgba(236, 72, 153, 0.4)" }
+      };
+      if (predefinedColors[selected]) {
+        return predefinedColors[selected];
+      }
+      if (isColorString(selected)) {
+        const shadow = "rgba(0, 0, 0, 0.4)";
+        return { primary: selected, hover: selected, shadow };
+      }
+      return { primary: "#3b82f6", hover: "#2563eb", shadow: "rgba(59, 130, 246, 0.4)" };
+    }
     const colorMap = {
       black: {
         primary: "#000000",
@@ -151,7 +206,7 @@
     function loadStyles() {
       var _a;
       const style = document.createElement("style");
-      const colors = ((_a = widgetConfig.settings) == null ? void 0 : _a.selectedColor) ? colorMap[widgetConfig.settings.selectedColor] : colorMap.blue;
+      const colors = resolveColors((_a = widgetConfig.settings) == null ? void 0 : _a.selectedColor);
       style.textContent = `
       .chatbot-widget-container {
         position: fixed;
