@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom Color Test - Fixed</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .status {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .color-demo {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+      }
+      .color-box {
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .color-box:hover {
+        transform: scale(1.05);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎨 Custom Color Chatbot Test - Fixed</h1>
+
+      <div class="success">
+        <strong>✅ Build Completed Successfully!</strong><br />
+        The compilation issues have been resolved. Your chatbot now supports
+        custom hex colors.
+      </div>
+
+      <div class="status">
+        <h3>🎯 Test Different Colors:</h3>
+        <p>Click on any color below to test it with the chatbot widget:</p>
+
+        <div class="color-demo">
+          <div
+            class="color-box"
+            style="background-color: #1a0c0c"
+            onclick="changeColor('#1a0c0c')"
+          >
+            #1a0c0c<br /><small>Your Custom</small>
+          </div>
+          <div
+            class="color-box"
+            style="background-color: #ff6b6b"
+            onclick="changeColor('#ff6b6b')"
+          >
+            #ff6b6b<br /><small>Coral Red</small>
+          </div>
+          <div
+            class="color-box"
+            style="background-color: #4ecdc4"
+            onclick="changeColor('#4ecdc4')"
+          >
+            #4ecdc4<br /><small>Teal</small>
+          </div>
+          <div
+            class="color-box"
+            style="background-color: #45b7d1"
+            onclick="changeColor('#45b7d1')"
+          >
+            #45b7d1<br /><small>Sky Blue</small>
+          </div>
+          <div
+            class="color-box"
+            style="background-color: #96ceb4"
+            onclick="changeColor('#96ceb4')"
+          >
+            #96ceb4<br /><small>Mint Green</small>
+          </div>
+          <div
+            class="color-box"
+            style="background-color: #feca57"
+            onclick="changeColor('#feca57')"
+          >
+            #feca57<br /><small>Golden Yellow</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="status">
+        <h3>🔧 Current Status:</h3>
+        <div id="status-display">
+          <p>
+            <strong>Current Color:</strong>
+            <span id="current-color">#1a0c0c</span>
+          </p>
+          <p>
+            <strong>Widget Status:</strong>
+            <span id="widget-status">Loading...</span>
+          </p>
+          <p><strong>Errors:</strong> <span id="error-count">0</span></p>
+        </div>
+      </div>
+
+      <div class="status">
+        <h3>📝 How It Works:</h3>
+        <ol>
+          <li>
+            <strong>Custom Hex Support:</strong> Any hex color like
+            <code>#1a0c0c</code> is automatically processed
+          </li>
+          <li>
+            <strong>Automatic Hover:</strong> System generates darker hover
+            states (10% darker primary, 20% darker hover)
+          </li>
+          <li>
+            <strong>API Integration:</strong> Works with your
+            <code>/api/chatbot/settings</code> endpoint
+          </li>
+          <li><strong>Fallback:</strong> Invalid colors default to blue</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <script
+      src="./public/chatbot-widget.min.js"
+      data-api-key="org_sk_3ca4feb8c1afe80f73e1a40256d48e7c"
+      data-widget-name="Color Test Bot"
+      data-widget-color="#1a0c0c"
+      data-position="bottom-right"
+    ></script>
+
+    <script>
+      let errorCount = 0;
+      let currentColor = "#1a0c0c";
+
+      // Monitor widget loading and errors
+      function updateStatus() {
+        document.getElementById("widget-status").textContent =
+          window.chatbotWidgetLoaded
+            ? "✅ Loaded Successfully"
+            : "⏳ Loading...";
+        document.getElementById("error-count").textContent = errorCount;
+        document.getElementById("current-color").textContent = currentColor;
+      }
+
+      // Change widget color dynamically
+      function changeColor(newColor) {
+        currentColor = newColor;
+        updateStatus();
+
+        // Find the widget button and update its color
+        const button = document.querySelector(".chatbot-toggle-button");
+        if (button) {
+          // This is a simplified approach - in a real implementation,
+          // you'd need to reload the widget with the new color
+          console.log(`🎨 Color changed to: ${newColor}`);
+          alert(
+            `Color changed to: ${newColor}\n\nNote: For full color change, reload the page with the new color in the script tag.`
+          );
+        }
+      }
+
+      // Monitor for errors
+      window.addEventListener("error", function (e) {
+        errorCount++;
+        console.error("Page error:", e.error);
+        updateStatus();
+      });
+
+      // Check widget status periodically
+      let checkCount = 0;
+      const maxChecks = 20;
+
+      function checkWidgetStatus() {
+        checkCount++;
+        updateStatus();
+
+        if (window.chatbotWidgetLoaded) {
+          console.log("✅ Chatbot widget loaded successfully!");
+          return;
+        }
+
+        if (checkCount >= maxChecks) {
+          console.log("❌ Chatbot widget failed to load");
+          return;
+        }
+
+        setTimeout(checkWidgetStatus, 500);
+      }
+
+      // Start monitoring
+      setTimeout(checkWidgetStatus, 1000);
+
+      // Initial status update
+      updateStatus();
+    </script>
+  </body>
+</html>

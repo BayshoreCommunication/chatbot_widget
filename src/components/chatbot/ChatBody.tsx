@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { RiRobot3Line } from "react-icons/ri";
 import MessageBubble from "./MessageBubble";
 import type { AppointmentSlot, Message } from "./types";
 
@@ -160,15 +159,15 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       <div className="space-y-4">
         {/* Instant Replies Section */}
         <AnimatePresence>
-          {/* {showInstantReplies && instantReplies.length > 0 && ( */}
-          <motion.div
-          // className="space-y-3"
-          // initial={{ opacity: 0, y: -20 }}
-          // animate={{ opacity: 1, y: 0 }}
-          // exit={{ opacity: 0, y: -20 }}
-          // transition={{ duration: 0.3 }}
-          >
-            {/* {instantReplies.map((reply, index) => (
+          {showInstantReplies && instantReplies.length > 0 && (
+            <motion.div
+              className="space-y-3"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {instantReplies.map((reply, index) => (
                 <motion.div
                   key={`instant-reply-${index}`}
                   initial={{ opacity: 0, x: -20 }}
@@ -181,14 +180,14 @@ const ChatBody: React.FC<ChatBodyProps> = ({
                 >
                   <button
                     onClick={() => onInstantReplyClick?.(reply.message)}
-                    className="max-w-[75%] bg-red-700 hover:bg-indigo-700 text-white rounded-lg p-3 text-sm transition-colors duration-200 cursor-pointer text-left"
+                    className="max-w-[75%] bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg p-3 text-sm transition-colors duration-200 cursor-pointer text-left"
                   >
                     {reply.message}
                   </button>
                 </motion.div>
-              ))} */}
-          </motion.div>
-          {/* )} */}
+              ))}
+            </motion.div>
+          )}
         </AnimatePresence>
 
         <AnimatePresence initial={false}>
@@ -245,7 +244,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
                 }
               }}
             >
-{/*               <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center">
+              {/*               <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center">
                 <RiRobot3Line className="text-indigo-300" />
               </div> */}
               <div className="flex space-x-1">

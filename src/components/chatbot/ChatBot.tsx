@@ -19,7 +19,7 @@ interface ChatBotProps {
 
 interface ChatbotSettings {
   name: string;
-  selectedColor: "black" | "red" | "orange" | "blue" | "pink";
+  selectedColor: string; // Now accepts any color string (hex, rgb, hsl, or predefined names)
   leadCapture: boolean;
   avatarUrl: string;
   auto_open?: boolean;
@@ -158,6 +158,113 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const getDefaultWelcome = useCallback(() => {
     return "Hello! How can I help you today?";
   }, []);
+
+  // Color utility functions
+  const isColorString = useCallback((str: string): boolean => {
+    if (!str || typeof str !== "string") return false;
+    // Check for hex colors
+    if (str.startsWith("#") && (str.length === 4 || str.length === 7)) {
+      return /^#[0-9A-Fa-f]{3}$|^#[0-9A-Fa-f]{6}$/.test(str);
+    }
+    // Check for rgb/rgba colors
+    if (str.startsWith("rgb")) {
+      return true;
+    }
+    // Check for hsl/hsla colors
+    if (str.startsWith("hsl")) {
+      return true;
+    }
+    return false;
+  }, []);
+
+  const darkenHex = useCallback((hex: string, amount: number = 12): string => {
+    try {
+      const h = hex.replace("#", "");
+      const bigint = parseInt(
+        h.length === 3
+          ? h
+              .split("")
+              .map((c) => c + c)
+              .join("")
+          : h,
+        16
+      );
+      const r = Math.max(0, ((bigint >> 16) & 255) - amount);
+      const g = Math.max(0, ((bigint >> 8) & 255) - amount);
+      const b = Math.max(0, (bigint & 255) - amount);
+      const toHex = (n: number) => n.toString(16).padStart(2, "0");
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    } catch (e) {
+      return hex;
+    }
+  }, []);
+
+  const resolveColors = useCallback(
+    (selected: string) => {
+      if (!selected)
+        return {
+          primary: "#3b82f6",
+          hover: "#2563eb",
+          shadow: "rgba(59, 130, 246, 0.4)",
+        };
+
+      // If it's a predefined color name, use the old mapping
+      const predefinedColors: Record<
+        string,
+        { primary: string; hover: string; shadow: string }
+      > = {
+        black: {
+          primary: "#000000",
+          hover: "#1a1a1a",
+          shadow: "rgba(0, 0, 0, 0.4)",
+        },
+        red: {
+          primary: "#ef4444",
+          hover: "#dc2626",
+          shadow: "rgba(239, 68, 68, 0.4)",
+        },
+        orange: {
+          primary: "#f97316",
+          hover: "#ea580c",
+          shadow: "rgba(249, 115, 22, 0.4)",
+        },
+        blue: {
+          primary: "#3b82f6",
+          hover: "#2563eb",
+          shadow: "rgba(59, 130, 246, 0.4)",
+        },
+        pink: {
+          primary: "#ec4899",
+          hover: "#db2777",
+          shadow: "rgba(236, 72, 153, 0.4)",
+        },
+      };
+
+      if (predefinedColors[selected]) {
+        return predefinedColors[selected];
+      }
+
+      // If it's a custom color string, generate hover and shadow colors
+      if (isColorString(selected)) {
+        const primary = selected.startsWith("#")
+          ? darkenHex(selected, 10)
+          : selected;
+        const hover = selected.startsWith("#")
+          ? darkenHex(selected, 20)
+          : selected;
+        const shadow = "rgba(0, 0, 0, 0.4)";
+        return { primary, hover, shadow };
+      }
+
+      // Default fallback
+      return {
+        primary: "#3b82f6",
+        hover: "#2563eb",
+        shadow: "rgba(59, 130, 246, 0.4)",
+      };
+    },
+    [isColorString, darkenHex]
+  );
 
   const fetchWelcomeMessage = useCallback(async () => {
     try {
@@ -872,7 +979,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
         {!embedded && (
           <motion.button
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full text-white flex items-center justify-center shadow-lg transition-colors overflow-hidden"
+            style={
+              {
+                backgroundColor: resolveColors(
+                  settings?.selectedColor ||
+                    serverSettings?.selectedColor ||
+                    "blue"
+                ).primary,
+                "--hover-color": resolveColors(
+                  settings?.selectedColor ||
+                    serverSettings?.selectedColor ||
+                    "blue"
+                ).hover,
+              } as React.CSSProperties
+            }
             onClick={() => {
               const wasOpen = isOpen;
               setIsOpen(!isOpen);
@@ -887,6 +1008,22 @@ const ChatBot: React.FC<ChatBotProps> = ({
             }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            onMouseEnter={(e) => {
+              const hoverColor = resolveColors(
+                settings?.selectedColor ||
+                  serverSettings?.selectedColor ||
+                  "blue"
+              ).hover;
+              e.currentTarget.style.backgroundColor = hoverColor;
+            }}
+            onMouseLeave={(e) => {
+              const primaryColor = resolveColors(
+                settings?.selectedColor ||
+                  serverSettings?.selectedColor ||
+                  "blue"
+              ).primary;
+              e.currentTarget.style.backgroundColor = primaryColor;
+            }}
           >
             {settings?.avatarUrl ? (
               <img

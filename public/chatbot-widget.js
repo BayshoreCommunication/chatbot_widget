@@ -8,33 +8,85 @@
       settings: null
       // will store chatbot settings
     };
-    const colorMap = {
-      black: {
-        primary: "#000000",
-        hover: "#1a1a1a",
-        shadow: "rgba(0, 0, 0, 0.4)"
-      },
-      red: {
-        primary: "#ef4444",
-        hover: "#dc2626",
-        shadow: "rgba(239, 68, 68, 0.4)"
-      },
-      orange: {
-        primary: "#f97316",
-        hover: "#ea580c",
-        shadow: "rgba(249, 115, 22, 0.4)"
-      },
-      blue: {
+    function isColorString(str) {
+      if (!str || typeof str !== "string")
+        return false;
+      if (str.startsWith("#") && (str.length === 4 || str.length === 7)) {
+        return /^#[0-9A-Fa-f]{3}$|^#[0-9A-Fa-f]{6}$/.test(str);
+      }
+      if (str.startsWith("rgb")) {
+        return true;
+      }
+      if (str.startsWith("hsl")) {
+        return true;
+      }
+      return false;
+    }
+    function darkenHex(hex, amount = 12) {
+      try {
+        const h = hex.replace("#", "");
+        const bigint = parseInt(
+          h.length === 3 ? h.split("").map((c) => c + c).join("") : h,
+          16
+        );
+        const r = Math.max(0, (bigint >> 16 & 255) - amount);
+        const g = Math.max(0, (bigint >> 8 & 255) - amount);
+        const b = Math.max(0, (bigint & 255) - amount);
+        const toHex = (n) => n.toString(16).padStart(2, "0");
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      } catch (e) {
+        return hex;
+      }
+    }
+    function resolveColors(selected) {
+      if (!selected)
+        return {
+          primary: "#3b82f6",
+          hover: "#2563eb",
+          shadow: "rgba(59, 130, 246, 0.4)"
+        };
+      const predefinedColors = {
+        black: {
+          primary: "#000000",
+          hover: "#1a1a1a",
+          shadow: "rgba(0, 0, 0, 0.4)"
+        },
+        red: {
+          primary: "#ef4444",
+          hover: "#dc2626",
+          shadow: "rgba(239, 68, 68, 0.4)"
+        },
+        orange: {
+          primary: "#f97316",
+          hover: "#ea580c",
+          shadow: "rgba(249, 115, 22, 0.4)"
+        },
+        blue: {
+          primary: "#3b82f6",
+          hover: "#2563eb",
+          shadow: "rgba(59, 130, 246, 0.4)"
+        },
+        pink: {
+          primary: "#ec4899",
+          hover: "#db2777",
+          shadow: "rgba(236, 72, 153, 0.4)"
+        }
+      };
+      if (predefinedColors[selected]) {
+        return predefinedColors[selected];
+      }
+      if (isColorString(selected)) {
+        const primary = selected.startsWith("#") ? darkenHex(selected, 10) : selected;
+        const hover = selected.startsWith("#") ? darkenHex(selected, 20) : selected;
+        const shadow = "rgba(0, 0, 0, 0.4)";
+        return { primary, hover, shadow };
+      }
+      return {
         primary: "#3b82f6",
         hover: "#2563eb",
         shadow: "rgba(59, 130, 246, 0.4)"
-      },
-      pink: {
-        primary: "#ec4899",
-        hover: "#db2777",
-        shadow: "rgba(236, 72, 153, 0.4)"
-      }
-    };
+      };
+    }
     function parseConfig() {
       const scripts = document.getElementsByTagName("script");
       const currentScript = scripts[scripts.length - 1];
@@ -66,7 +118,9 @@
         }
       }
       if (!widgetConfig.apiKey) {
-        console.error("Chatbot widget error: No API key provided. Add data-api-key attribute to script tag.");
+        console.error(
+          "Chatbot widget error: No API key provided. Add data-api-key attribute to script tag."
+        );
         return false;
       }
       return true;
@@ -84,7 +138,9 @@
         });
         if (!response.ok) {
           console.warn("API returned error status:", response.status);
-          const fallbackApiKey = (_a = document.currentScript) == null ? void 0 : _a.getAttribute("data-fallback-api-key");
+          const fallbackApiKey = (_a = document.currentScript) == null ? void 0 : _a.getAttribute(
+            "data-fallback-api-key"
+          );
           if (fallbackApiKey && fallbackApiKey !== widgetConfig.apiKey) {
             console.log("Trying fallback API key...");
             widgetConfig.apiKey = fallbackApiKey;
@@ -100,7 +156,9 @@
         return false;
       } catch (error) {
         console.error("Failed to fetch chatbot settings:", error);
-        const fallbackApiKey = (_b = document.currentScript) == null ? void 0 : _b.getAttribute("data-fallback-api-key");
+        const fallbackApiKey = (_b = document.currentScript) == null ? void 0 : _b.getAttribute(
+          "data-fallback-api-key"
+        );
         if (fallbackApiKey && fallbackApiKey !== widgetConfig.apiKey) {
           console.log("Trying fallback API key due to error...");
           widgetConfig.apiKey = fallbackApiKey;
@@ -120,7 +178,10 @@
           }
         });
         if (!response.ok) {
-          console.warn("Fallback API also returned error status:", response.status);
+          console.warn(
+            "Fallback API also returned error status:",
+            response.status
+          );
           return false;
         }
         const data = await response.json();
@@ -151,7 +212,7 @@
     function loadStyles() {
       var _a;
       const style = document.createElement("style");
-      const colors = ((_a = widgetConfig.settings) == null ? void 0 : _a.selectedColor) ? colorMap[widgetConfig.settings.selectedColor] : colorMap.blue;
+      const colors = resolveColors((_a = widgetConfig.settings) == null ? void 0 : _a.selectedColor);
       style.textContent = `
       .chatbot-widget-container {
         position: fixed;
@@ -569,18 +630,24 @@
                 const loopStartTime = (/* @__PURE__ */ new Date()).toLocaleTimeString();
                 let currentTime = 0;
                 sortedMessages.forEach((messageObj, index) => {
-                  const scheduledTime = new Date(Date.now() + currentTime).toLocaleTimeString();
+                  const scheduledTime = new Date(
+                    Date.now() + currentTime
+                  ).toLocaleTimeString();
                   setTimeout(() => {
                     if (!isOpen) {
                       showInstantReply(messageObj.message, 4e3);
                     } else {
-                      console.log(`\u2705 Message ${index + 1} will be shown inside chat interface`);
+                      console.log(
+                        `\u2705 Message ${index + 1} will be shown inside chat interface`
+                      );
                     }
                   }, currentTime);
                   currentTime += 6e3;
                 });
                 const totalCycleTime = currentTime + 2e3;
-                const nextLoopTime = new Date(Date.now() + totalCycleTime).toLocaleTimeString();
+                const nextLoopTime = new Date(
+                  Date.now() + totalCycleTime
+                ).toLocaleTimeString();
                 setTimeout(showMessagesLoop, totalCycleTime);
               };
               const sortedMessages = messages.sort((a, b) => a.order - b.order);
@@ -620,7 +687,9 @@
         if (widgetConfig.apiKey) {
           const settingsLoaded = await fetchSettings();
           if (!settingsLoaded) {
-            console.log("Failed to load settings from API, using default settings");
+            console.log(
+              "Failed to load settings from API, using default settings"
+            );
             createDefaultSettings();
           }
         } else {
@@ -629,7 +698,10 @@
         }
         loadStyles();
         createWidget();
-        console.log("Chatbot widget initialized with API key:", widgetConfig.apiKey);
+        console.log(
+          "Chatbot widget initialized with API key:",
+          widgetConfig.apiKey
+        );
         window.chatbotWidgetLoaded = true;
       }
     }
