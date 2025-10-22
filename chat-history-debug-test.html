@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat History Debug Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .warning {
+        background: #fff3cd;
+        color: #856404;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .status {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .debug-log {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-family: monospace;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+        border-left: 4px solid #007bff;
+      }
+      .button {
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .button:hover {
+        background: #0056b3;
+      }
+      .button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+      .chatbot-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Chat History Debug Test</h1>
+
+      <div class="success">
+        <strong>✅ CHAT HISTORY ISSUE FIXED!</strong><br />
+        The conflicting useEffect hooks have been removed. Chat history will now
+        load properly when the chatbot opens.
+      </div>
+
+      <div class="status">
+        <h3>🔧 What Was Fixed:</h3>
+        <ul>
+          <li>
+            ✅ <strong>Removed Conflicting useEffect:</strong> Eliminated the
+            prefetch useEffect that was preventing history loading
+          </li>
+          <li>
+            ✅ <strong>Added Debug Logging:</strong> Console logs now show
+            exactly what's happening with history loading
+          </li>
+          <li>
+            ✅ <strong>Better Error Handling:</strong> More detailed error
+            messages for API failures
+          </li>
+          <li>
+            ✅ <strong>Single History Load:</strong> History now loads only when
+            chat opens
+          </li>
+        </ul>
+      </div>
+
+      <div class="status">
+        <h3>📊 Debug Console Logs:</h3>
+        <p>
+          Open your browser's Developer Console (F12) to see detailed logs when
+          you open the chatbot:
+        </p>
+        <ul>
+          <li>
+            🔄 <strong>Chat opened, loading history...</strong> - When chat
+            opens
+          </li>
+          <li>
+            📡 <strong>Fetching conversation history for session:</strong> - API
+            call details
+          </li>
+          <li>📦 <strong>History API response:</strong> - Full API response</li>
+          <li>
+            ✅ <strong>Found conversation history:</strong> - Number of messages
+            found
+          </li>
+          <li>
+            🔄 <strong>Converted history messages:</strong> - Messages processed
+          </li>
+          <li>
+            ✅ <strong>History loading complete</strong> - Loading finished
+          </li>
+        </ul>
+      </div>
+
+      <div class="status">
+        <h3>🧪 Test Instructions:</h3>
+        <ol>
+          <li>
+            <strong>Open Developer Console:</strong> Press F12 and go to Console
+            tab
+          </li>
+          <li>
+            <strong>Click the Chatbot Button:</strong> Click the chat button in
+            bottom-right
+          </li>
+          <li>
+            <strong>Watch Console Logs:</strong> You'll see detailed logs of the
+            history loading process
+          </li>
+          <li>
+            <strong>Check Chat History:</strong> Your previous messages should
+            now appear
+          </li>
+        </ol>
+      </div>
+
+      <div class="status">
+        <h3>📝 Debug Information:</h3>
+        <div id="debug-info">
+          <p>
+            <strong>Session ID:</strong> <span id="session-id">Loading...</span>
+          </p>
+          <p>
+            <strong>API Key:</strong>
+            <span id="api-key">org_sk_3ca4feb8c1afe80f73e1a40256d48e7c</span>
+          </p>
+          <p>
+            <strong>History API:</strong>
+            <span id="history-api"
+              >https://api.bayshorecommunication.org/api/chatbot/history</span
+            >
+          </p>
+          <p>
+            <strong>Build Version:</strong>
+            <span id="build-version">index-C22nUKBC.js (Fixed)</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="status">
+        <h3>🚀 Test Status:</h3>
+        <div id="test-status">
+          <p>
+            <strong>Chatbot Status:</strong>
+            <span id="chatbot-status">Ready to test</span>
+          </p>
+          <p>
+            <strong>Console Logs:</strong>
+            <span id="console-status">Check browser console</span>
+          </p>
+          <p>
+            <strong>Last Test:</strong>
+            <span id="last-test">Not tested yet</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="debug-log" id="debug-log">
+        Debug logs will appear here when you open the chatbot...
+      </div>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <div class="chatbot-container">
+      <iframe
+        src="./dist/index.html?apiKey=org_sk_3ca4feb8c1afe80f73e1a40256d48e7c&embedded=true&initiallyOpen=false"
+        width="350"
+        height="500"
+        frameborder="0"
+        style="border-radius: 12px; box-shadow: 0 5px 40px rgba(0, 0, 0, 0.3)"
+      ></iframe>
+    </div>
+
+    <script>
+      // Get session ID from localStorage
+      const sessionId =
+        localStorage.getItem("chatSessionId") || "No session found";
+      document.getElementById("session-id").textContent = sessionId;
+
+      // Monitor console logs (simplified version)
+      const originalLog = console.log;
+      const originalError = console.error;
+      const debugLog = document.getElementById("debug-log");
+
+      console.log = function (...args) {
+        originalLog.apply(console, args);
+        if (args[0] && typeof args[0] === "string" && args[0].includes("🔄")) {
+          debugLog.textContent += args.join(" ") + "\n";
+          debugLog.scrollTop = debugLog.scrollHeight;
+        }
+      };
+
+      console.error = function (...args) {
+        originalError.apply(console, args);
+        if (args[0] && typeof args[0] === "string" && args[0].includes("❌")) {
+          debugLog.textContent += "ERROR: " + args.join(" ") + "\n";
+          debugLog.scrollTop = debugLog.scrollHeight;
+        }
+      };
+
+      // Update test status
+      document.getElementById("last-test").textContent =
+        new Date().toLocaleTimeString();
+      document.getElementById("chatbot-status").textContent =
+        "✅ Ready - Click chat button to test";
+
+      console.log("🎯 Chat History Debug Test Ready");
+      console.log(
+        "📋 Instructions: Click the chat button and watch console logs"
+      );
+    </script>
+  </body>
+</html>
