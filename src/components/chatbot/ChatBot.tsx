@@ -19,7 +19,7 @@ interface ChatBotProps {
 
 interface ChatbotSettings {
   name: string;
-  selectedColor: "black" | "red" | "orange" | "blue" | "pink";
+  selectedColor: string; // Now accepts any color string (hex, rgb, hsl, or predefined names)
   leadCapture: boolean;
   avatarUrl: string;
   auto_open?: boolean;
