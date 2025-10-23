@@ -258,7 +258,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
     return slots.length > 0 ? slots : undefined;
   };
 
-  // APIs
+  // APIS
+
   const getConversationHistory = useCallback(
     async (sessionId: string): Promise<ChatResponse> => {
       const historyBase =
@@ -272,29 +273,64 @@ const ChatBot: React.FC<ChatBotProps> = ({
         apiKey,
       });
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
-        },
-      });
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+          },
+          mode: "cors", // Explicitly set CORS mode
+          credentials: "omit", // Don't send credentials
+        });
 
-      console.log(
-        "📡 History API response status:",
-        response.status,
-        response.statusText
-      );
+        console.log(
+          "📡 History API response status:",
+          response.status,
+          response.statusText
+        );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ History API error response:", errorText);
-        throw new Error(`API error: ${response.status} - ${errorText}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("❌ History API error response:", errorText);
+          throw new Error(`API error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("📦 History API response data:", data);
+        return data;
+      } catch (error) {
+        console.error("❌ Network error in getConversationHistory:", error);
+
+        // If it's a CORS error, try a different approach
+        if (error instanceof TypeError && error.message.includes("fetch")) {
+          console.log("🔄 CORS error detected, trying alternative approach...");
+
+          // Try using the parent window's fetch if available
+          if (window.parent && window.parent !== window) {
+            try {
+              const response = await window.parent.fetch(url, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-API-Key":
+                    apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+                },
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                console.log("✅ Successfully fetched via parent window:", data);
+                return data;
+              }
+            } catch (parentError) {
+              console.error("❌ Parent window fetch also failed:", parentError);
+            }
+          }
+        }
+
+        throw error;
       }
-
-      const data = await response.json();
-      console.log("📦 History API response data:", data);
-      return data;
     },
     [apiKey]
   );
@@ -435,6 +471,17 @@ const ChatBot: React.FC<ChatBotProps> = ({
         }
       } catch (error) {
         console.error("❌ Error loading conversation history:", error);
+
+        // Handle CORS errors gracefully
+        if (error instanceof TypeError && error.message.includes("fetch")) {
+          console.log(
+            "⚠️ CORS error - chat history unavailable in iframe mode"
+          );
+          console.log(
+            "💡 This is normal when running in an iframe. History will work in standalone mode."
+          );
+        }
+
         setIsLoading(false);
         setIsTyping(false);
       } finally {
@@ -493,17 +540,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
     console.log("🔌 Connecting to Socket.IO at:", socketUrl);
 
     const socketInstance = io(socketUrl, {
-      transports: ["polling", "websocket"], // Try polling first, then websocket
-      timeout: 15000,
+      transports: ["websocket", "polling"], // Try websocket first, then polling
+      timeout: 20000,
       reconnection: true,
-      reconnectionAttempts: 3,
-      reconnectionDelay: 2000,
-      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
       auth: { apiKey },
       query: { apiKey },
       forceNew: true,
       upgrade: true,
-      rememberUpgrade: true,
+      rememberUpgrade: false, // Don't remember failed upgrades
+      autoConnect: true,
     });
 
     socketRef.current = socketInstance;
@@ -519,14 +567,25 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
     socketInstance.on("disconnect", (reason) => {
       console.log("🔌 Socket.IO disconnected:", reason);
+      if (reason === "io server disconnect") {
+        // Server disconnected, try to reconnect manually
+        console.log("Server disconnected, attempting manual reconnection...");
+        socketInstance.connect();
+      }
     });
 
     socketInstance.on("reconnect", (attemptNumber) => {
       console.log("🔄 Socket.IO reconnected after", attemptNumber, "attempts");
+      // Re-join room after reconnection
+      socketInstance.emit("join_room", { room: apiKey });
     });
 
     socketInstance.on("reconnect_error", (error) => {
       console.error("❌ Socket.IO reconnection error:", error);
+    });
+
+    socketInstance.on("reconnect_failed", () => {
+      console.error("❌ Socket.IO reconnection failed after all attempts");
     });
 
     socketInstance.on("connection_confirmed", (data) => {

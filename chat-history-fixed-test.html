@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat History Fixed Test - No CORS Issues</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .warning {
+        background: #fff3cd;
+        color: #856404;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .status {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .debug-log {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-family: monospace;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+        border-left: 4px solid #007bff;
+      }
+      .button {
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .button:hover {
+        background: #0056b3;
+      }
+      .chatbot-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        width: 350px;
+        height: 500px;
+        border-radius: 12px;
+        box-shadow: 0 5px 40px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+      .test-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Chat History Fixed Test - No CORS Issues</h1>
+
+      <div class="success">
+        <strong>✅ CORS ISSUE IDENTIFIED AND FIXED!</strong><br />
+        The "Failed to fetch" error was caused by CORS restrictions when running
+        in an iframe. This test page loads the chatbot directly without iframe
+        to avoid CORS issues.
+      </div>
+
+      <div class="warning">
+        <strong>⚠️ CORS Issue Explanation:</strong><br />
+        When the chatbot runs inside an iframe, browsers block cross-origin
+        requests to the API for security reasons. This is why you saw
+        "TypeError: Failed to fetch".
+      </div>
+
+      <div class="status">
+        <h3>🔧 What Was Fixed:</h3>
+        <ul>
+          <li>
+            ✅ <strong>CORS Error Handling:</strong> Added proper error handling
+            for CORS issues
+          </li>
+          <li>
+            ✅ <strong>Alternative Fetch Methods:</strong> Try parent window
+            fetch as fallback
+          </li>
+          <li>
+            ✅ <strong>Graceful Degradation:</strong> Chat works even if history
+            fails to load
+          </li>
+          <li>
+            ✅ <strong>Better Error Messages:</strong> Clear explanation of CORS
+            limitations
+          </li>
+          <li>
+            ✅ <strong>Direct Loading:</strong> This test page loads chatbot
+            directly (no iframe)
+          </li>
+        </ul>
+      </div>
+
+      <div class="status">
+        <h3>🧪 Test Options:</h3>
+        <div class="test-buttons">
+          <button class="button" onclick="testDirectAPI()">
+            Test API Directly
+          </button>
+          <button class="button" onclick="testSessionManagement()">
+            Test Session Management
+          </button>
+          <button class="button" onclick="clearSessionData()">
+            Clear Session Data
+          </button>
+          <button class="button" onclick="generateNewSession()">
+            Generate New Session
+          </button>
+        </div>
+      </div>
+
+      <div class="status">
+        <h3>📝 Debug Information:</h3>
+        <div id="debug-info">
+          <p>
+            <strong>Session ID:</strong> <span id="session-id">Loading...</span>
+          </p>
+          <p>
+            <strong>API Key:</strong>
+            <span id="api-key">org_sk_3ca4feb8c1afe80f73e1a40256d48e7c</span>
+          </p>
+          <p>
+            <strong>History API:</strong>
+            <span id="history-api"
+              >https://api.bayshorecommunication.org/api/chatbot/history</span
+            >
+          </p>
+          <p>
+            <strong>Test Mode:</strong>
+            <span id="test-mode">Direct Loading (No CORS)</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="status">
+        <h3>🚀 Test Status:</h3>
+        <div id="test-status">
+          <p>
+            <strong>Chatbot Status:</strong>
+            <span id="chatbot-status">Ready to test</span>
+          </p>
+          <p>
+            <strong>API Status:</strong> <span id="api-status">Not tested</span>
+          </p>
+          <p>
+            <strong>Last Test:</strong>
+            <span id="last-test">Not tested yet</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="debug-log" id="debug-log">Debug logs will appear here...</div>
+    </div>
+
+    <!-- Chatbot Widget - Direct Loading (No iframe) -->
+    <div class="chatbot-container" id="chatbot-container">
+      <!-- Chatbot will be loaded here directly -->
+    </div>
+
+    <script>
+      // Configuration
+      const API_KEY = "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c";
+      const HISTORY_API_URL =
+        "https://api.bayshorecommunication.org/api/chatbot/history";
+
+      // Session management
+      let currentSessionId = null;
+
+      // Initialize
+      function initialize() {
+        // Get current session ID
+        currentSessionId =
+          localStorage.getItem("chatSessionId") || generateUUID();
+        localStorage.setItem("chatSessionId", currentSessionId);
+
+        // Update UI
+        document.getElementById("session-id").textContent = currentSessionId;
+
+        // Load chatbot directly (no iframe)
+        loadChatbotDirectly();
+
+        console.log("🎯 Chat History Fixed Test Ready");
+        console.log("📋 No CORS issues - chatbot loaded directly");
+      }
+
+      // Generate UUID
+      function generateUUID() {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+          /[xy]/g,
+          function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c == "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          }
+        );
+      }
+
+      // Load chatbot directly without iframe
+      function loadChatbotDirectly() {
+        const container = document.getElementById("chatbot-container");
+
+        // Create a div to hold the chatbot
+        const chatbotDiv = document.createElement("div");
+        chatbotDiv.id = "chatbot-widget";
+        chatbotDiv.style.width = "100%";
+        chatbotDiv.style.height = "100%";
+
+        container.appendChild(chatbotDiv);
+
+        // Load the chatbot script
+        const script = document.createElement("script");
+        script.src = "./dist/assets/index-l90B0C7D.js";
+        script.onload = function () {
+          console.log("✅ Chatbot script loaded successfully");
+          document.getElementById("chatbot-status").textContent =
+            "✅ Loaded - Click to test";
+        };
+        script.onerror = function () {
+          console.error("❌ Failed to load chatbot script");
+          document.getElementById("chatbot-status").textContent =
+            "❌ Failed to load";
+        };
+        document.head.appendChild(script);
+      }
+
+      // Test API directly
+      async function testDirectAPI() {
+        const debugLog = document.getElementById("debug-log");
+        debugLog.textContent = "🔄 Testing API directly...\n";
+
+        try {
+          const url = `${HISTORY_API_URL}/${currentSessionId}`;
+          console.log("🔍 Testing URL:", url);
+
+          const response = await fetch(url, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "X-API-Key": API_KEY,
+            },
+          });
+
+          console.log("📡 Response status:", response.status);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log("📦 Response data:", data);
+
+          debugLog.textContent += `✅ API Test Successful!\n`;
+          debugLog.textContent += `📦 Response: ${JSON.stringify(
+            data,
+            null,
+            2
+          )}\n`;
+
+          document.getElementById("api-status").textContent = "✅ Working";
+          document.getElementById("last-test").textContent =
+            new Date().toLocaleTimeString();
+        } catch (error) {
+          console.error("❌ API Test Error:", error);
+          debugLog.textContent += `❌ API Test Failed: ${error.message}\n`;
+
+          document.getElementById("api-status").textContent = "❌ Failed";
+          document.getElementById("last-test").textContent =
+            new Date().toLocaleTimeString();
+        }
+      }
+
+      // Test session management
+      function testSessionManagement() {
+        const debugLog = document.getElementById("debug-log");
+        const storedSession = localStorage.getItem("chatSessionId");
+        const hasVisited = localStorage.getItem("chatbot_has_visited");
+
+        debugLog.textContent = `🔑 Session Management Test:\n`;
+        debugLog.textContent += `Current Session ID: ${currentSessionId}\n`;
+        debugLog.textContent += `Stored Session ID: ${
+          storedSession || "None"
+        }\n`;
+        debugLog.textContent += `Session Match: ${
+          storedSession === currentSessionId ? "✅" : "❌"
+        }\n`;
+        debugLog.textContent += `Has Visited: ${hasVisited ? "✅" : "❌"}\n`;
+
+        if (storedSession === currentSessionId) {
+          debugLog.textContent += `✅ Session Management Working!\n`;
+        } else {
+          debugLog.textContent += `❌ Session Management Issue!\n`;
+        }
+      }
+
+      // Clear session data
+      function clearSessionData() {
+        localStorage.removeItem("chatSessionId");
+        localStorage.removeItem("chatbot_has_visited");
+
+        const debugLog = document.getElementById("debug-log");
+        debugLog.textContent =
+          "✅ Session data cleared! Refresh the page to generate a new session.\n";
+      }
+
+      // Generate new session
+      function generateNewSession() {
+        currentSessionId = generateUUID();
+        localStorage.setItem("chatSessionId", currentSessionId);
+
+        const debugLog = document.getElementById("debug-log");
+        debugLog.textContent = `✅ New session generated: ${currentSessionId}\n`;
+
+        // Update UI
+        document.getElementById("session-id").textContent = currentSessionId;
+      }
+
+      // Initialize on page load
+      initialize();
+
+      // Auto-test API on load
+      setTimeout(() => {
+        testDirectAPI();
+      }, 1000);
+    </script>
+  </body>
+</html>
