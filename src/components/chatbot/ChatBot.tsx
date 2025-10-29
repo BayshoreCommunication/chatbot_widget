@@ -450,24 +450,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
           );
           console.log("🔄 Converted history messages:", historyMessages.length);
 
+          // Set messages immediately for first-load reliability
+          setMessages(historyMessages);
+          if (response.mode) setCurrentMode(response.mode as BotMode);
+
+          // Minimal scroll adjustments
           setIsPositioningScroll(true);
-          setBatchedMessages(true);
           setTimeout(() => {
-            setMessages(historyMessages);
-            if (response.mode) setCurrentMode(response.mode as BotMode);
-            setTimeout(() => {
-              forceScrollToBottom();
-              setTimeout(() => {
-                setIsLoading(false);
-                setIsPositioningScroll(false);
-                console.log("✅ History loading complete");
-              }, 300);
-            }, 300);
-          }, 300);
+            forceScrollToBottom();
+            setIsPositioningScroll(false);
+          }, 150);
+
+          console.log("✅ History loading complete");
+          setHistoryFetched(true); // Mark fetched only on success so we can retry on failures
         } else {
           console.log("⚠️ No conversation history found in response");
-          setIsLoading(false);
-          setIsTyping(false);
         }
       } catch (error) {
         console.error("❌ Error loading conversation history:", error);
@@ -481,11 +478,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
             "💡 This is normal when running in an iframe. History will work in standalone mode."
           );
         }
-
+      } finally {
         setIsLoading(false);
         setIsTyping(false);
-      } finally {
-        setHistoryFetched(true);
       }
     };
 
