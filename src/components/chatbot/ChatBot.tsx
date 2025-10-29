@@ -666,12 +666,17 @@ const ChatBot: React.FC<ChatBotProps> = ({
   }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
 
   useEffect(() => {
-    if (isOpen && apiKey) {
-      setShowInstantReplies(false);
-      // Only fetch instant replies if we don't have a welcome message yet
-      if (!welcomeMessage) {
-        fetchInstantReplies().then(() => {});
-      }
+    if (!isOpen || !apiKey) return;
+    setShowInstantReplies(false);
+    // Fetch instant replies when opening chat
+    // If the welcome message is missing or a known placeholder, still fetch
+    const shouldFetch =
+      !welcomeMessage || welcomeMessage.trim() === "Welcome message not found.";
+    if (shouldFetch) {
+      fetchInstantReplies().then(() => {});
+    } else {
+      // Also attempt fetching; component will decide visibility
+      fetchInstantReplies().then(() => {});
     }
   }, [isOpen, apiKey, welcomeMessage]);
 
