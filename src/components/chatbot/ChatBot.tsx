@@ -132,6 +132,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
     localStorage.setItem("chatSessionId", sessionId);
   }, [sessionId]);
 
+  // Ensure we always use HTTPS to avoid mixed-content errors
+  const ensureHttps = useCallback((url: string): string => {
+    if (!url) return url;
+    return url.replace(/^http:\/\//i, "https://");
+  }, []);
+
   // utils
   const forceScrollToBottom = () => {
     setForceScrollBottom((prev) => prev + 1);
@@ -152,8 +158,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
     const cleaned = raw.replace(/%0A|\n|\r/g, "").replace(/\s+/g, "");
     const noTrailingSlash = cleaned.replace(/\/+$/, "");
     const noTrailingApi = noTrailingSlash.replace(/\/api$/, "");
-    return noTrailingApi;
-  }, []);
+    return ensureHttps(noTrailingApi);
+  }, [ensureHttps]);
 
   const getDefaultWelcome = useCallback(() => {
     return "Hello! How can I help you today?";
@@ -161,9 +167,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const fetchWelcomeMessage = useCallback(async () => {
     try {
-      const base =
+      const base = ensureHttps(
         (welcomeApiBaseUrl && welcomeApiBaseUrl.trim().replace(/\/+$/, "")) ||
-        getNormalizedApiBase();
+          getNormalizedApiBase()
+      );
       const url = `${base}/api/instant-reply`;
 
       console.log("🔍 Fetching welcome message from:", url);
@@ -210,7 +217,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
       console.log("💥 Error fetching welcome message:", error);
       setWelcomeMessage(getDefaultWelcome());
     }
-  }, [apiKey, welcomeApiBaseUrl, getNormalizedApiBase, getDefaultWelcome]);
+  }, [
+    apiKey,
+    welcomeApiBaseUrl,
+    getNormalizedApiBase,
+    getDefaultWelcome,
+    ensureHttps,
+  ]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -271,9 +284,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
   // APIs
   const getConversationHistory = useCallback(
     async (sessionId: string): Promise<ChatResponse> => {
-      const historyBase =
+      const historyBase = ensureHttps(
         import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
-        "https://api.bayshorecommunication.org/api/chatbot/history";
+          "https://api.bayshorecommunication.org/api/chatbot/history"
+      );
       const url = `${historyBase}/${sessionId}`;
 
       console.log("🔍 getConversationHistory called:", {
@@ -313,8 +327,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
     message: string,
     sessionId: string
   ): Promise<ChatResponse> => {
-    const apiUrl =
-      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
+    const apiUrl = ensureHttps(
+      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask"
+    );
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -337,8 +352,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
     time: string;
   }): Promise<ChatResponse> => {
     const message = `I want to confirm my appointment for ${request.day} at ${request.time} (ID: ${request.slotId})`;
-    const apiUrl =
-      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask";
+    const apiUrl = ensureHttps(
+      customApiUrl || "https://api.bayshorecommunication.org/api/chatbot/ask"
+    );
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -497,9 +513,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
   useEffect(() => {
     if (!apiKey) return;
 
-    const socketUrl =
-      import.meta.env.VITE_SOCKET_URL ||
-      "https://api.bayshorecommunication.org";
+    const socketUrl = ensureHttps(
+      import.meta.env.VITE_SOCKET_URL || "https://api.bayshorecommunication.org"
+    );
     console.log("🔌 Connecting to Socket.IO at:", socketUrl);
 
     const socketInstance = io(socketUrl, {
@@ -595,7 +611,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       console.log("🔌 Cleaning up Socket.IO connection");
       socketInstance.disconnect();
     };
-  }, [apiKey, sessionId]);
+  }, [apiKey, sessionId, ensureHttps]);
 
   const handleUserInteraction = () => {
     if (isNewUser) {
