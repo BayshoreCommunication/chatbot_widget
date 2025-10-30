@@ -187,20 +187,30 @@ const ChatBot: React.FC<ChatBotProps> = ({
       const data = await response.json();
       console.log("📥 Welcome message API response:", data);
 
-      // Prefer first instant reply message as welcome
-      const firstMessage = data?.data?.messages?.[0]?.message;
-      if (data?.status === "success" && firstMessage) {
-        console.log("✅ Setting welcome message:", firstMessage);
-        setWelcomeMessage(String(firstMessage));
-      } else {
-        console.log("⚠️ No welcome message in response");
-        setWelcomeMessage(getDefaultWelcome());
+      // Use welcome message only when instant replies are active; pick lowest order
+      const isActive = data?.data?.isActive === true;
+      const msgs = Array.isArray(data?.data?.messages)
+        ? data.data.messages
+        : [];
+      if (data?.status === "success" && isActive && msgs.length > 0) {
+        const sorted = [...msgs].sort(
+          (a: { order?: number }, b: { order?: number }) =>
+            (a.order ?? 0) - (b.order ?? 0)
+        );
+        const firstMessage = sorted[0]?.message;
+        if (firstMessage && String(firstMessage).trim()) {
+          console.log("✅ Setting welcome message:", firstMessage);
+          setWelcomeMessage(String(firstMessage));
+          return;
+        }
       }
+      console.log("⚠️ No active welcome message in response");
+      setWelcomeMessage(getDefaultWelcome());
     } catch (error) {
       console.log("💥 Error fetching welcome message:", error);
       setWelcomeMessage(getDefaultWelcome());
     }
-  }, [apiKey, welcomeApiBaseUrl, getNormalizedApiBase]);
+  }, [apiKey, welcomeApiBaseUrl, getNormalizedApiBase, getDefaultWelcome]);
 
   const fetchSettings = useCallback(async () => {
     try {
