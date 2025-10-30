@@ -162,7 +162,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
   }, [ensureHttps]);
 
   const getDefaultWelcome = useCallback(() => {
-    return "Hello! How can I help you today?";
+    // return "Hello! How can I help you today?";
+    return "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.";
   }, []);
 
   const fetchWelcomeMessage = useCallback(async () => {
@@ -171,7 +172,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
         (welcomeApiBaseUrl && welcomeApiBaseUrl.trim().replace(/\/+$/, "")) ||
           getNormalizedApiBase()
       );
-      const url = `${base}/api/instant-reply`;
+      const url = `https://api.bayshorecommunication.org/api/instant-reply`;
 
       console.log("🔍 Fetching welcome message from:", url);
       console.log(
@@ -650,11 +651,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const fetchInstantReplies = async () => {
     try {
       const apiUrl = getNormalizedApiBase();
-      const response = await fetch(`${apiUrl}/api/instant-reply`, {
-        headers: {
-          "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
-        },
-      });
+      const response = await fetch(
+        `https://api.bayshorecommunication.org/api/instant-reply`,
+        {
+          headers: {
+            "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+          },
+        }
+      );
       if (!response.ok) return false;
 
       const data = await response.json();
