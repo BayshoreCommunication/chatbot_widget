@@ -158,7 +158,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
     const cleaned = raw.replace(/%0A|\n|\r/g, "").replace(/\s+/g, "");
     const noTrailingSlash = cleaned.replace(/\/+$/, "");
     const noTrailingApi = noTrailingSlash.replace(/\/api$/, "");
-    return ensureHttps(noTrailingApi);
+    // Force HTTPS - critical for production to avoid mixed content errors
+    const httpsUrl = ensureHttps(noTrailingApi);
+    console.log("🔐 API Base URL:", httpsUrl);
+    return httpsUrl;
   }, [ensureHttps]);
 
   const getDefaultWelcome = useCallback(() => {
@@ -172,7 +175,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
         (welcomeApiBaseUrl && welcomeApiBaseUrl.trim().replace(/\/+$/, "")) ||
           getNormalizedApiBase()
       );
-      const url = `https://api.bayshorecommunication.org/api/instant-reply`;
+      const url = `${base}/api/instant-reply`;
 
       console.log("🔍 Fetching welcome message from:", url);
       console.log(
@@ -650,15 +653,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const fetchInstantReplies = async () => {
     try {
-      const apiUrl = getNormalizedApiBase();
-      const response = await fetch(
-        `https://api.bayshorecommunication.org/api/instant-reply`,
-        {
-          headers: {
-            "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
-          },
-        }
-      );
+      const apiUrl = ensureHttps(getNormalizedApiBase());
+      const response = await fetch(`${apiUrl}/api/instant-reply`, {
+        headers: {
+          "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+        },
+      });
       if (!response.ok) return false;
 
       const data = await response.json();
