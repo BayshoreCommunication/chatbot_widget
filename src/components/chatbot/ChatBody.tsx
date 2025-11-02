@@ -77,7 +77,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
           }
           setInitialScrollComplete(true);
         },
-        isBatchLoading ? 100 : 100
+        isBatchLoading ? 50 : 50 // Reduced from 100ms for faster response
       );
 
       return () => clearTimeout(timer);
@@ -106,7 +106,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       if (!showInstantReplies || instantReplies.length === 0) {
         scrollToBottom();
       }
-    }, 100);
+    }, 50); // Reduced from 100ms
 
     return () => clearTimeout(timer);
   }, [showInstantReplies, instantReplies.length]); // Empty dependency array means this runs once on mount
@@ -124,23 +124,14 @@ const ChatBody: React.FC<ChatBodyProps> = ({
 
   // Optimize message rendering to prevent animation overload with large histories
   const getMessageDelay = (index: number, totalMessages: number) => {
-    // When loading history, only animate a few most recent messages
-    if (isBatchLoading && totalMessages > 10) {
-      // Only animate the last 5 messages
-      const lastMessageIndex = totalMessages - 1;
-      const animationThreshold = lastMessageIndex - 4;
-
-      if (index <= animationThreshold) {
-        // No animation delay for older messages
-        return 0;
-      }
-
-      // Stagger animation only for the last 5 messages
-      return 0.05 * (index - animationThreshold);
+    // When loading history, skip animations for better performance
+    if (isBatchLoading && totalMessages > 5) {
+      // No animation delay for batch loaded messages
+      return 0;
     }
 
-    // Normal animation behavior for smaller histories or non-batch loads
-    return 0.05 * Math.min(index % 5, 5);
+    // For real-time messages, use minimal stagger
+    return 0.03 * Math.min(index % 3, 3); // Reduced from 0.05
   };
 
   return (
@@ -160,15 +151,15 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       <div className="space-y-4">
         {/* Instant Replies Section */}
         <AnimatePresence>
-          {/* {showInstantReplies && instantReplies.length > 0 && ( */}
-          <motion.div
-          // className="space-y-3"
-          // initial={{ opacity: 0, y: -20 }}
-          // animate={{ opacity: 1, y: 0 }}
-          // exit={{ opacity: 0, y: -20 }}
-          // transition={{ duration: 0.3 }}
-          >
-            {/* {instantReplies.map((reply, index) => (
+          {showInstantReplies && instantReplies.length > 0 && (
+            <motion.div
+              className="space-y-3"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {instantReplies.map((reply, index) => (
                 <motion.div
                   key={`instant-reply-${index}`}
                   initial={{ opacity: 0, x: -20 }}
@@ -179,16 +170,29 @@ const ChatBody: React.FC<ChatBodyProps> = ({
                   }}
                   className="flex justify-start"
                 >
+                  <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center mr-2 mt-1 overflow-hidden flex-shrink-0">
+                    {settings?.avatarUrl ? (
+                      <img
+                        src={settings.avatarUrl}
+                        alt={settings?.name || "Assistant"}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center w-full h-full">
+                        <RiRobot3Line className="text-indigo-300 text-xl" />
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => onInstantReplyClick?.(reply.message)}
-                    className="max-w-[75%] bg-red-700 hover:bg-indigo-700 text-white rounded-lg p-3 text-sm transition-colors duration-200 cursor-pointer text-left"
+                    className="max-w-[75%] bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg px-4 py-3 text-sm transition-all duration-200 cursor-pointer text-left shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
                     {reply.message}
                   </button>
                 </motion.div>
-              ))} */}
-          </motion.div>
-          {/* )} */}
+              ))}
+            </motion.div>
+          )}
         </AnimatePresence>
 
         <AnimatePresence initial={false}>
@@ -198,15 +202,13 @@ const ChatBody: React.FC<ChatBodyProps> = ({
               initial={
                 isBatchLoading && index < messages.length - 5
                   ? { opacity: 1, y: 0 }
-                  : { opacity: 0, y: 20, scale: 0.95 }
+                  : { opacity: 0, y: 10, scale: 0.98 }
               }
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{
-                duration: 0.3,
+                duration: isBatchLoading ? 0.15 : 0.2, // Faster for batch, smooth for real-time
                 delay: getMessageDelay(index, messages.length),
-                type: "spring",
-                stiffness: 400,
-                damping: 30,
+                ease: "easeOut", // Smoother than spring for batch loading
               }}
               onAnimationComplete={() => {
                 // Ensure we're still at the bottom after each message animates
@@ -245,7 +247,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
                 }
               }}
             >
-{/*               <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center">
+              {/*               <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center">
                 <RiRobot3Line className="text-indigo-300" />
               </div> */}
               <div className="flex space-x-1">

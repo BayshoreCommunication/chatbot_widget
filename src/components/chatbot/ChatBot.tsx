@@ -431,20 +431,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
           );
           console.log("🔄 Converted history messages:", historyMessages.length);
 
-          setIsPositioningScroll(true);
+          // Set messages immediately for faster loading
+          setMessages(historyMessages);
+          if (response.mode) setCurrentMode(response.mode as BotMode);
+
+          // Set batch loading flag for optimized rendering
           setBatchedMessages(true);
+          setIsPositioningScroll(true);
+
+          // Quick scroll and cleanup after minimal delay
           setTimeout(() => {
-            setMessages(historyMessages);
-            if (response.mode) setCurrentMode(response.mode as BotMode);
-            setTimeout(() => {
-              forceScrollToBottom();
-              setTimeout(() => {
-                setIsLoading(false);
-                setIsPositioningScroll(false);
-                console.log("✅ History loading complete");
-              }, 300);
-            }, 300);
-          }, 300);
+            forceScrollToBottom();
+            setIsLoading(false);
+            setIsPositioningScroll(false);
+            console.log("✅ History loading complete");
+          }, 100); // Reduced from 900ms to 100ms
         } else {
           console.log("⚠️ No conversation history found in response");
           setIsLoading(false);
@@ -464,7 +465,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   useEffect(() => {
     if (batchedMessages && !isLoading) {
-      const timer = setTimeout(() => setBatchedMessages(false), 500);
+      const timer = setTimeout(() => setBatchedMessages(false), 200); // Reduced from 500ms
       return () => clearTimeout(timer);
     }
   }, [batchedMessages, isLoading]);
@@ -650,13 +651,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   useEffect(() => {
     if (isOpen && apiKey) {
-      setShowInstantReplies(false);
-      // Only fetch instant replies if we don't have a welcome message yet
-      if (!welcomeMessage) {
-        fetchInstantReplies().then(() => {});
-      }
+      // Fetch instant replies when chat opens
+      fetchInstantReplies().then(() => {});
     }
-  }, [isOpen, apiKey, welcomeMessage]);
+  }, [isOpen, apiKey]);
 
   const fetchInstantReplies = async () => {
     try {
@@ -765,6 +763,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
   };
 
   const handleInstantReplyClick = (message: string) => {
+    // Hide instant replies once user clicks on one
+    setShowInstantReplies(false);
+
     const userMessage: Message = {
       id: `instant_reply_${Date.now()}`,
       text: message,
