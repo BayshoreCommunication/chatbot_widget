@@ -626,7 +626,7 @@
       document.head.appendChild(style);
     }
     function createWidget() {
-      var _a, _b, _c, _d, _e, _f, _g;
+      var _a, _b, _c, _d, _e;
       const toggleButton = document.createElement("button");
       toggleButton.className = `chatbot-toggle-button ${widgetConfig.position}`;
       if ((_a = widgetConfig.settings) == null ? void 0 : _a.avatarUrl) {
@@ -689,6 +689,7 @@
         }
       }
       function openWidget() {
+        var _a2, _b2;
         toggleButton.classList.add("hidden");
         toggleButton.classList.remove("animate-pulse-theme");
         widgetContainer.classList.remove("hidden");
@@ -700,6 +701,15 @@
           }
         }, 300);
         isOpen = true;
+        if (!hasPlayedWelcomeSound) {
+          const soundSettings = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
+          if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b2 = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _b2.enabled)) {
+            console.log("\u{1F50A} Playing welcome sound on chat open...");
+            setTimeout(() => {
+              playWelcomeSound();
+            }, 300);
+          }
+        }
         instantReplyContainer.innerHTML = "";
         clearInstantReplyTimeouts();
         instantReplyLoopRunning = false;
@@ -800,8 +810,8 @@
           closeWidget();
         }
         if (event.data === "messageSent") {
-          const soundSettings2 = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
-          if ((soundSettings2 == null ? void 0 : soundSettings2.enabled) && ((_b2 = soundSettings2 == null ? void 0 : soundSettings2.message_sound) == null ? void 0 : _b2.enabled) && ((_c2 = soundSettings2 == null ? void 0 : soundSettings2.message_sound) == null ? void 0 : _c2.play_on_send)) {
+          const soundSettings = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
+          if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b2 = soundSettings == null ? void 0 : soundSettings.message_sound) == null ? void 0 : _b2.enabled) && ((_c2 = soundSettings == null ? void 0 : soundSettings.message_sound) == null ? void 0 : _c2.play_on_send)) {
             playMessageSound();
           }
         }
@@ -826,13 +836,6 @@
           }
         }, 500);
         instantReplyTimeouts.push(autoOpenTimeout);
-      }
-      const soundSettings = (_f = widgetConfig.settings) == null ? void 0 : _f.sound_notifications;
-      if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_g = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _g.enabled)) {
-        console.log("\u{1F50A} Playing welcome sound...");
-        setTimeout(() => {
-          playWelcomeSound();
-        }, 1e3);
       }
     }
     async function init() {

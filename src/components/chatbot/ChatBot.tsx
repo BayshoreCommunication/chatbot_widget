@@ -633,9 +633,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
 
-  // Play welcome sound on page load - runs once after settings are available
+  // Play welcome sound when chat opens for the first time (user gesture)
   useEffect(() => {
-    // Wait for settings to be loaded first
+    // Only play if chat is open and welcome sound hasn't played yet
+    if (!isOpen || welcomeSoundPlayedRef.current) {
+      return;
+    }
+
+    // Wait for settings to be loaded
     const soundSettings =
       serverSettings?.sound_notifications || settings?.sound_notifications;
 
@@ -644,17 +649,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
       return;
     }
 
-    // Only play if enabled and not played yet this session
-    if (
-      soundSettings?.enabled &&
-      soundSettings?.welcome_sound?.enabled &&
-      !welcomeSoundPlayedRef.current
-    ) {
-      console.log("🔊 Playing welcome sound on page load...");
+    // Play welcome sound if enabled
+    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
+      console.log("🔊 Playing welcome sound on chat open...");
       console.log("🔊 Sound settings:", soundSettings);
       welcomeSoundPlayedRef.current = true; // Mark as played
 
-      // Small delay to ensure DOM is ready and respect autoplay policies
+      // Small delay to ensure the chat animation starts
       const timer = setTimeout(() => {
         try {
           playWelcomeSound();
@@ -662,18 +663,23 @@ const ChatBot: React.FC<ChatBotProps> = ({
         } catch (error) {
           console.error("🔊 Error playing welcome sound:", error);
         }
-      }, 500); // Reduced delay for faster playback
+      }, 300); // Shorter delay since we have user gesture
 
       return () => clearTimeout(timer);
     } else {
       console.log("🔊 Welcome sound not playing:", {
         enabled: soundSettings?.enabled,
         welcomeEnabled: soundSettings?.welcome_sound?.enabled,
+        chatOpen: isOpen,
         alreadyPlayed: welcomeSoundPlayedRef.current,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverSettings?.sound_notifications, settings?.sound_notifications]); // Only react to sound settings
+  }, [
+    isOpen,
+    serverSettings?.sound_notifications,
+    settings?.sound_notifications,
+  ]); // React to chat opening and sound settings
 
   const fetchInstantReplies = useCallback(async () => {
     try {
