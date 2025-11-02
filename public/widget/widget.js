@@ -842,11 +842,11 @@
 
       isOpen = true;
 
-      // Play welcome sound on first open (user gesture allows this)
+      // Fallback: Play welcome sound on first open if it was blocked by autoplay policy
       if (!hasPlayedWelcomeSound) {
         const soundSettings = widgetConfig.settings?.sound_notifications;
         if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
-          console.log("🔊 Playing welcome sound on chat open...");
+          console.log("🔊 Playing welcome sound on chat open (fallback)...");
           setTimeout(() => {
             playWelcomeSound();
           }, 300); // Short delay for smooth UX
@@ -1053,7 +1053,15 @@
       instantReplyTimeouts.push(autoOpenTimeout);
     }
 
-    // Note: Welcome sound will play when user opens the chat (user gesture required)
+    // Play welcome sound automatically 2-3 seconds after widget loads
+    const soundSettings = widgetConfig.settings?.sound_notifications;
+    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
+      console.log("🔊 Playing welcome sound on widget load...");
+      const welcomeTimeout = setTimeout(() => {
+        playWelcomeSound();
+      }, 2500); // 2.5 seconds delay
+      instantReplyTimeouts.push(welcomeTimeout);
+    }
   }
 
   // Initialize the widget

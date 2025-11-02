@@ -633,10 +633,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
 
-  // Play welcome sound when chat opens for the first time (user gesture)
+  // Play welcome sound automatically 2-3 seconds after widget loads
   useEffect(() => {
-    // Only play if chat is open and welcome sound hasn't played yet
-    if (!isOpen || welcomeSoundPlayedRef.current) {
+    // Only play if welcome sound hasn't played yet
+    if (welcomeSoundPlayedRef.current) {
       return;
     }
 
@@ -649,10 +649,55 @@ const ChatBot: React.FC<ChatBotProps> = ({
       return;
     }
 
-    // Play welcome sound if enabled
+    // Play welcome sound if enabled (regardless of chat open/closed)
     if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
-      console.log("🔊 Playing welcome sound on chat open...");
+      console.log("🔊 Playing welcome sound on widget load...");
       console.log("🔊 Sound settings:", soundSettings);
+      welcomeSoundPlayedRef.current = true; // Mark as played
+
+      // Delay 2-3 seconds after widget loads
+      const timer = setTimeout(() => {
+        try {
+          playWelcomeSound();
+          console.log("🔊 Welcome sound played successfully");
+        } catch (error) {
+          console.log(
+            "🔊 Welcome sound autoplay prevented (user interaction required):",
+            error
+          );
+          // Don't mark as failed, browser might block autoplay
+          welcomeSoundPlayedRef.current = false; // Allow retry on user interaction
+        }
+      }, 2500); // 2.5 seconds delay
+
+      return () => clearTimeout(timer);
+    } else {
+      console.log("🔊 Welcome sound disabled in settings:", {
+        enabled: soundSettings?.enabled,
+        welcomeEnabled: soundSettings?.welcome_sound?.enabled,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverSettings?.sound_notifications, settings?.sound_notifications]); // React to sound settings loading
+
+  // Fallback: Play welcome sound when chat opens if it failed on page load
+  useEffect(() => {
+    // Only play if chat is open and welcome sound hasn't played yet
+    if (!isOpen || welcomeSoundPlayedRef.current) {
+      return;
+    }
+
+    // Wait for settings to be loaded
+    const soundSettings =
+      serverSettings?.sound_notifications || settings?.sound_notifications;
+
+    if (!soundSettings) {
+      return;
+    }
+
+    // Play welcome sound if enabled (fallback for autoplay block)
+    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
+      console.log("🔊 Playing welcome sound on chat open (fallback)...");
       welcomeSoundPlayedRef.current = true; // Mark as played
 
       // Small delay to ensure the chat animation starts
@@ -666,13 +711,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
       }, 300); // Shorter delay since we have user gesture
 
       return () => clearTimeout(timer);
-    } else {
-      console.log("🔊 Welcome sound not playing:", {
-        enabled: soundSettings?.enabled,
-        welcomeEnabled: soundSettings?.welcome_sound?.enabled,
-        chatOpen: isOpen,
-        alreadyPlayed: welcomeSoundPlayedRef.current,
-      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
