@@ -384,7 +384,20 @@
     const style = document.createElement("style");
     const colors = resolveColors(widgetConfig.settings?.selectedColor);
 
+    // Get font name from settings, fallback to system fonts
+    const fontFamily =
+      widgetConfig.settings?.font_name ||
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
     style.textContent = `
+      /* Global font style for widget */
+      .chatbot-widget-container,
+      .chatbot-toggle-button,
+      .chatbot-tooltip,
+      .instant-reply-popup {
+        font-family: ${fontFamily};
+      }
+
       .chatbot-widget-container {
         position: fixed;
         z-index: 9999;

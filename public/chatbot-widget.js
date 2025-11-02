@@ -19,7 +19,10 @@
         oscillator.frequency.value = 523.25;
         oscillator.type = "sine";
         gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        gainNode.gain.exponentialRampToValueAtTime(
+          0.01,
+          audioContext.currentTime + 0.5
+        );
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.5);
         hasPlayedWelcomeSound = true;
@@ -37,7 +40,10 @@
         oscillator.frequency.value = 800;
         oscillator.type = "sine";
         gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        gainNode.gain.exponentialRampToValueAtTime(
+          0.01,
+          audioContext.currentTime + 0.15
+        );
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.15);
       } catch (error) {
@@ -288,10 +294,19 @@
       return true;
     }
     function loadStyles() {
-      var _a;
+      var _a, _b;
       const style = document.createElement("style");
       const colors = resolveColors((_a = widgetConfig.settings) == null ? void 0 : _a.selectedColor);
+      const fontFamily = ((_b = widgetConfig.settings) == null ? void 0 : _b.font_name) || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
       style.textContent = `
+      /* Global font style for widget */
+      .chatbot-widget-container,
+      .chatbot-toggle-button,
+      .chatbot-tooltip,
+      .instant-reply-popup {
+        font-family: ${fontFamily};
+      }
+
       .chatbot-widget-container {
         position: fixed;
         z-index: 9999;
@@ -706,7 +721,9 @@
           instantReplyTimeouts.push(timeout);
         });
         const hideTimeout = setTimeout(() => {
-          const popups = instantReplyContainer.querySelectorAll(".instant-reply-popup");
+          const popups = instantReplyContainer.querySelectorAll(
+            ".instant-reply-popup"
+          );
           popups.forEach((popup, index) => {
             const fadeTimeout = setTimeout(() => {
               popup.classList.add("fade-out");

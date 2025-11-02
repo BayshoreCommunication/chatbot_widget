@@ -938,10 +938,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
             className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
             onClick={() => {
               const wasOpen = isOpen;
-              setIsOpen(!isOpen);
               setShowTooltip(false);
               if (!wasOpen) {
+                // Reset history flag BEFORE opening to ensure history loads
                 setHistoryFetched(false);
+              }
+              setIsOpen(!isOpen);
+              if (!wasOpen) {
                 setTimeout(() => forceScrollToBottom(), 800);
               }
               if (tooltipTimeoutRef.current)
@@ -988,6 +991,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
                   ? "fixed inset-0 m-0 p-0 rounded-none"
                   : "fixed bottom-0 right-0 sm:relative"
               }`}
+              style={{
+                fontFamily:
+                  settings?.font_name ||
+                  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+              }}
               initial={{ opacity: 0, y: 50, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -997,10 +1005,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
               <ChatHeader
                 toggleChat={() => {
                   const wasOpen = isOpen;
-                  setIsOpen(!isOpen);
                   setShowTooltip(false);
                   if (!wasOpen) {
+                    // Reset history flag BEFORE opening to ensure history loads
                     setHistoryFetched(false);
+                  }
+                  setIsOpen(!isOpen);
+                  if (!wasOpen) {
                     setTimeout(() => forceScrollToBottom(), 800);
                   }
                   if (tooltipTimeoutRef.current)
