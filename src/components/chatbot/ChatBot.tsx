@@ -388,8 +388,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
   useEffect(() => {
     const autoOpenEnabled = settings?.auto_open_widget ?? settings?.auto_open;
     if (autoOpenEnabled && !isOpen) {
-      const t = setTimeout(() => setIsOpen(true), 2000);
-      return () => clearTimeout(t);
+      // Open immediately when auto_open_widget is true
+      setIsOpen(true);
     }
   }, [settings?.auto_open_widget, settings?.auto_open, isOpen]);
 
@@ -629,17 +629,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
 
-  // Play welcome sound on first load (if enabled)
+  // Play welcome sound on every page load (if enabled)
   useEffect(() => {
     const soundSettings =
       serverSettings?.sound_notifications || settings?.sound_notifications;
 
-    if (
-      soundSettings?.enabled &&
-      soundSettings?.welcome_sound?.enabled &&
-      soundSettings?.welcome_sound?.play_on_first_load
-    ) {
-      console.log("🔊 Playing welcome sound...");
+    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
+      console.log("🔊 Playing welcome sound on page load...");
       // Small delay to ensure user has interacted with page (for autoplay policy)
       const timer = setTimeout(() => {
         playWelcomeSound();
