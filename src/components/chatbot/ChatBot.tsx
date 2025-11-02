@@ -98,7 +98,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const socketRef = useRef<Socket | null>(null);
   const welcomeSoundPlayedRef = useRef(false); // Track if welcome sound has played this session
 
-
   // welcome text
   const [welcomeMessage, setWelcomeMessage] = useState<string>("");
   const [serverSettings, setServerSettings] = useState<ChatbotSettings | null>(
@@ -640,11 +639,15 @@ const ChatBot: React.FC<ChatBotProps> = ({
       serverSettings?.sound_notifications || settings?.sound_notifications;
 
     // Only play if settings are available, enabled, and not played yet this session
-    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled && !welcomeSoundPlayedRef.current) {
+    if (
+      soundSettings?.enabled &&
+      soundSettings?.welcome_sound?.enabled &&
+      !welcomeSoundPlayedRef.current
+    ) {
       console.log("🔊 Playing welcome sound on page load...");
       console.log("🔊 Sound settings:", soundSettings);
       welcomeSoundPlayedRef.current = true; // Mark as played
-      
+
       // Small delay to ensure user has interacted with page (for autoplay policy)
       const timer = setTimeout(() => {
         playWelcomeSound();
