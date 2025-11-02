@@ -75,13 +75,16 @@ const ChatBot: React.FC<ChatBotProps> = ({
   );
   const [tooltipKey, setTooltipKey] = useState(0);
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tooltipTexts = [
-    "Hello! I'm your AI assistant. Need help?",
-    "Have a question? Click here to chat!",
-    "I can help schedule your appointments.",
-    "Looking for information? Just ask me!",
-    "Let me assist you today. Click to open.",
-  ];
+  const tooltipTexts = useMemo(
+    () => [
+      "Hello! I'm your AI assistant. Need help?",
+      "Have a question? Click here to chat!",
+      "I can help schedule your appointments.",
+      "Looking for information? Just ask me!",
+      "Let me assist you today. Click to open.",
+    ],
+    []
+  );
 
   const chatBodyRef = useRef<HTMLDivElement>(null);
   const [forceScrollBottom, setForceScrollBottom] = useState(0);
@@ -122,6 +125,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
   // Ensure we always use HTTPS to avoid mixed-content errors
   const ensureHttps = useCallback((url: string): string => {
     if (!url) return url;
+    // Handle protocol-relative URLs
+    if (url.startsWith("//")) {
+      return "https:" + url;
+    }
+    // Handle HTTP URLs
     return url.replace(/^http:\/\//i, "https://");
   }, []);
 
@@ -502,7 +510,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     return () => {
       if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
     };
-  }, [isOpen]);
+  }, [isOpen, tooltipTexts]);
 
   useEffect(() => {
     if (!batchedMessages && messages.length > 0) {
