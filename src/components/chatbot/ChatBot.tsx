@@ -940,11 +940,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
               const wasOpen = isOpen;
               setShowTooltip(false);
               if (!wasOpen) {
+                // Reset history and open chat in the same batch
                 setHistoryFetched(false);
-                setTimeout(() => {
-                  setIsOpen(true);
-                  setTimeout(() => forceScrollToBottom(), 800);
-                }, 0);
+                setIsOpen(true);
+                setTimeout(() => forceScrollToBottom(), 800);
               } else {
                 setIsOpen(false);
               }
@@ -1008,11 +1007,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
                   const wasOpen = isOpen;
                   setShowTooltip(false);
                   if (!wasOpen) {
+                    // Reset history and open chat in the same batch
                     setHistoryFetched(false);
-                    setTimeout(() => {
-                      setIsOpen(true);
-                      setTimeout(() => forceScrollToBottom(), 800);
-                    }, 0);
+                    setIsOpen(true);
+                    setTimeout(() => forceScrollToBottom(), 800);
                   } else {
                     setIsOpen(false);
                   }
