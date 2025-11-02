@@ -633,12 +633,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
 
-  // Play welcome sound on every page load when settings are loaded
+  // Play welcome sound on page load - runs once after settings are available
   useEffect(() => {
+    // Wait for settings to be loaded first
     const soundSettings =
       serverSettings?.sound_notifications || settings?.sound_notifications;
 
-    // Only play if settings are available, enabled, and not played yet this session
+    if (!soundSettings) {
+      console.log("🔊 Waiting for sound settings to load...");
+      return;
+    }
+
+    // Only play if enabled and not played yet this session
     if (
       soundSettings?.enabled &&
       soundSettings?.welcome_sound?.enabled &&
@@ -648,14 +654,26 @@ const ChatBot: React.FC<ChatBotProps> = ({
       console.log("🔊 Sound settings:", soundSettings);
       welcomeSoundPlayedRef.current = true; // Mark as played
 
-      // Small delay to ensure user has interacted with page (for autoplay policy)
+      // Small delay to ensure DOM is ready and respect autoplay policies
       const timer = setTimeout(() => {
-        playWelcomeSound();
-      }, 1500);
+        try {
+          playWelcomeSound();
+          console.log("🔊 Welcome sound played successfully");
+        } catch (error) {
+          console.error("🔊 Error playing welcome sound:", error);
+        }
+      }, 500); // Reduced delay for faster playback
 
       return () => clearTimeout(timer);
+    } else {
+      console.log("🔊 Welcome sound not playing:", {
+        enabled: soundSettings?.enabled,
+        welcomeEnabled: soundSettings?.welcome_sound?.enabled,
+        alreadyPlayed: welcomeSoundPlayedRef.current,
+      });
     }
-  }, [serverSettings, settings]); // React to settings changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverSettings?.sound_notifications, settings?.sound_notifications]); // Only react to sound settings
 
   const fetchInstantReplies = useCallback(async () => {
     try {
