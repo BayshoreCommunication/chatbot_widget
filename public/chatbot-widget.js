@@ -8,10 +8,16 @@
     }
     let hasPlayedWelcomeSound = false;
     function playWelcomeSound() {
-      if (hasPlayedWelcomeSound)
+      console.log("\u{1F50A} playWelcomeSound() called");
+      console.log("\u{1F50A} hasPlayedWelcomeSound flag:", hasPlayedWelcomeSound);
+      if (hasPlayedWelcomeSound) {
+        console.log("\u{1F50A} Welcome sound already played, skipping");
         return;
+      }
       try {
+        console.log("\u{1F50A} Creating AudioContext...");
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log("\u{1F50A} AudioContext created:", audioContext.state);
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         oscillator.connect(gainNode);
@@ -26,8 +32,10 @@
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.5);
         hasPlayedWelcomeSound = true;
+        console.log("\u{1F50A} \u2705 Welcome sound played successfully!");
       } catch (error) {
-        console.log("Audio not supported or blocked by browser");
+        console.error("\u{1F50A} \u274C Error playing welcome sound:", error);
+        console.error("\u{1F50A} Error details:", error.message, error.stack);
       }
     }
     function playMessageSound() {
@@ -206,11 +214,13 @@
       return true;
     }
     async function fetchSettings() {
-      var _a, _b;
+      var _a, _b, _c;
+      console.log("\u{1F4E1} Fetching settings from API...");
       try {
         const apiUrl = ensureHttps(
           window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
         );
+        console.log("\u{1F4E1} Settings API URL:", `${apiUrl}/api/chatbot/settings`);
         const response = await fetch(`${apiUrl}/api/chatbot/settings`, {
           method: "GET",
           headers: {
@@ -231,14 +241,18 @@
           return false;
         }
         const data = await response.json();
+        console.log("\u{1F4E1} Settings API response:", data);
         if (data.status === "success") {
           widgetConfig.settings = data.settings;
+          console.log("\u2705 Settings loaded successfully:", widgetConfig.settings);
+          console.log("\u{1F50A} Sound notifications in settings:", (_b = widgetConfig.settings) == null ? void 0 : _b.sound_notifications);
           return true;
         }
+        console.warn("\u26A0\uFE0F Settings API returned non-success status");
         return false;
       } catch (error) {
-        console.error("Failed to fetch chatbot settings:", error);
-        const fallbackApiKey = (_b = document.currentScript) == null ? void 0 : _b.getAttribute(
+        console.error("\u274C Failed to fetch chatbot settings:", error);
+        const fallbackApiKey = (_c = document.currentScript) == null ? void 0 : _c.getAttribute(
           "data-fallback-api-key"
         );
         if (fallbackApiKey && fallbackApiKey !== widgetConfig.apiKey) {
@@ -839,10 +853,16 @@
       }
     }
     async function init() {
-      var _a, _b;
+      var _a, _b, _c, _d;
+      console.log("\u{1F680} Widget initialization started");
+      console.log("\u{1F680} Document readyState:", document.readyState);
       if (parseConfig()) {
+        console.log("\u2705 Config parsed successfully");
         if (widgetConfig.apiKey) {
+          console.log("\u{1F511} API Key found:", widgetConfig.apiKey);
           const settingsLoaded = await fetchSettings();
+          console.log("\u2699\uFE0F Settings loaded:", settingsLoaded);
+          console.log("\u2699\uFE0F Sound settings:", (_a = widgetConfig.settings) == null ? void 0 : _a.sound_notifications);
           if (!settingsLoaded) {
             console.log(
               "Failed to load settings from API, using default settings"
@@ -853,21 +873,42 @@
           console.error("API key is required to fetch settings");
           createDefaultSettings();
         }
+        console.log("\u{1F3A8} Loading styles...");
         loadStyles();
+        console.log("\u{1F3D7}\uFE0F Creating widget...");
         createWidget();
         console.log(
           "Chatbot widget initialized with API key:",
           widgetConfig.apiKey
         );
         window.chatbotWidgetLoaded = true;
-        const soundSettings = (_a = widgetConfig.settings) == null ? void 0 : _a.sound_notifications;
-        if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _b.enabled)) {
-          console.log("\u{1F50A} Scheduling welcome sound for 2.5 seconds after page load...");
+        console.log("\u2705 Widget fully loaded and visible");
+        const soundSettings = (_b = widgetConfig.settings) == null ? void 0 : _b.sound_notifications;
+        console.log("\u{1F50A} Checking sound settings:", soundSettings);
+        if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_c = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _c.enabled)) {
+          console.log(
+            "\u{1F50A} \u2705 Sound enabled! Scheduling welcome sound for 2.5 seconds..."
+          );
+          console.log("\u{1F50A} Sound settings details:", {
+            enabled: soundSettings.enabled,
+            welcome_sound_enabled: soundSettings.welcome_sound.enabled,
+            delay: 2500
+          });
           setTimeout(() => {
-            console.log("\u{1F50A} Playing welcome sound now...");
+            console.log("\u{1F50A} \u23F0 2.5 seconds elapsed, playing welcome sound now...");
             playWelcomeSound();
           }, 2500);
+        } else {
+          console.log("\u{1F50A} \u274C Welcome sound disabled or not configured");
+          console.log("\u{1F50A} Debug info:", {
+            soundSettings_exists: !!soundSettings,
+            enabled: soundSettings == null ? void 0 : soundSettings.enabled,
+            welcome_sound: soundSettings == null ? void 0 : soundSettings.welcome_sound,
+            welcome_sound_enabled: (_d = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _d.enabled
+          });
         }
+      } else {
+        console.error("\u274C Config parsing failed");
       }
     }
     if (document.readyState === "loading") {
