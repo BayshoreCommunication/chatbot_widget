@@ -118,11 +118,12 @@ class SoundManager {
 
   // Play welcome sound
   playWelcomeSound(): void {
-    if (this.welcomeAudio && !this.hasPlayedWelcome) {
+    if (this.welcomeAudio) {
+      // Reset to beginning and play (allow multiple plays)
+      this.welcomeAudio.currentTime = 0;
       this.welcomeAudio.play().catch((error) => {
         console.log("Welcome sound autoplay prevented:", error);
       });
-      this.hasPlayedWelcome = true;
     }
   }
 

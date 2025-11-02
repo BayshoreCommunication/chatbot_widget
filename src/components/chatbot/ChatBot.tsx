@@ -637,16 +637,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
     const soundSettings =
       serverSettings?.sound_notifications || settings?.sound_notifications;
 
+    // Always play welcome sound on page load when enabled (no restrictions)
     if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
       console.log("🔊 Playing welcome sound on page load...");
       // Small delay to ensure user has interacted with page (for autoplay policy)
       const timer = setTimeout(() => {
         playWelcomeSound();
-      }, 1000);
+      }, 1500); // Slightly longer delay for better reliability
 
       return () => clearTimeout(timer);
     }
-  }, [serverSettings?.sound_notifications, settings?.sound_notifications]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally empty - play once on component mount (every page load)
 
   const fetchInstantReplies = useCallback(async () => {
     try {
