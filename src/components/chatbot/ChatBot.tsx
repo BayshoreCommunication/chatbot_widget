@@ -96,6 +96,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const [isAgentMode, setIsAgentMode] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const welcomeSoundPlayedRef = useRef(false); // Track if welcome sound has played this session
+
 
   // welcome text
   const [welcomeMessage, setWelcomeMessage] = useState<string>("");
@@ -632,23 +634,25 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
 
-  // Play welcome sound on every page load (if enabled)
+  // Play welcome sound on every page load when settings are loaded
   useEffect(() => {
     const soundSettings =
       serverSettings?.sound_notifications || settings?.sound_notifications;
 
-    // Always play welcome sound on page load when enabled (no restrictions)
-    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
+    // Only play if settings are available, enabled, and not played yet this session
+    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled && !welcomeSoundPlayedRef.current) {
       console.log("🔊 Playing welcome sound on page load...");
+      console.log("🔊 Sound settings:", soundSettings);
+      welcomeSoundPlayedRef.current = true; // Mark as played
+      
       // Small delay to ensure user has interacted with page (for autoplay policy)
       const timer = setTimeout(() => {
         playWelcomeSound();
-      }, 1500); // Slightly longer delay for better reliability
+      }, 1500);
 
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Intentionally empty - play once on component mount (every page load)
+  }, [serverSettings, settings]); // React to settings changes
 
   const fetchInstantReplies = useCallback(async () => {
     try {
