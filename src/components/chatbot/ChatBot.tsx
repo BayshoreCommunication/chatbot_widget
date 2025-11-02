@@ -67,6 +67,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const [currentMode, setCurrentMode] = useState<BotMode>("initial");
   const [historyFetched, setHistoryFetched] = useState(false);
   const [batchedMessages, setBatchedMessages] = useState<boolean>(false);
+  const [forceHistoryReload, setForceHistoryReload] = useState(false);
 
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipText, setTooltipText] = useState(
@@ -394,7 +395,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
   }, [settings?.auto_open_widget, settings?.auto_open, isOpen]);
 
   useEffect(() => {
-    if (!isOpen || historyFetched) return;
+    // Load history when chat opens and either history hasn't been fetched OR force reload is requested
+    if (!isOpen || (historyFetched && !forceHistoryReload)) return;
 
     console.log("🔄 Chat opened, loading history...", {
       isOpen,
@@ -457,11 +459,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
         setIsTyping(false);
       } finally {
         setHistoryFetched(true);
+        setForceHistoryReload(false); // Reset the force reload flag
       }
     };
 
     run();
-  }, [isOpen, historyFetched, sessionId, getConversationHistory]);
+  }, [
+    isOpen,
+    historyFetched,
+    forceHistoryReload,
+    sessionId,
+    getConversationHistory,
+  ]);
 
   useEffect(() => {
     if (batchedMessages && !isLoading) {
@@ -940,8 +949,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
               const wasOpen = isOpen;
               setShowTooltip(false);
               if (!wasOpen) {
-                // Reset history and open chat in the same batch
-                setHistoryFetched(false);
+                // Force history reload on manual open
+                setForceHistoryReload(true);
                 setIsOpen(true);
                 setTimeout(() => forceScrollToBottom(), 800);
               } else {
@@ -1007,8 +1016,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
                   const wasOpen = isOpen;
                   setShowTooltip(false);
                   if (!wasOpen) {
-                    // Reset history and open chat in the same batch
-                    setHistoryFetched(false);
+                    // Force history reload on manual open
+                    setForceHistoryReload(true);
                     setIsOpen(true);
                     setTimeout(() => forceScrollToBottom(), 800);
                   } else {
