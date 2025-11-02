@@ -281,47 +281,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
   };
 
   // APIs
-  const getConversationHistory = useCallback(
-    async (sessionId: string): Promise<ChatResponse> => {
-      const historyBase = ensureHttps(
-        import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
-          "https://api.bayshorecommunication.org/api/chatbot/history"
-      );
-      const url = `${historyBase}/${sessionId}`;
-
-      console.log("🔍 getConversationHistory called:", {
-        sessionId,
-        url,
-        apiKey,
-      });
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
-        },
-      });
-
-      console.log(
-        "📡 History API response status:",
-        response.status,
-        response.statusText
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ History API error response:", errorText);
-        throw new Error(`API error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log("📦 History API response data:", data);
-      return data;
-    },
-    [apiKey, ensureHttps]
-  );
-
   const sendMessageToApi = async (
     message: string,
     sessionId: string
@@ -417,33 +376,68 @@ const ChatBot: React.FC<ChatBotProps> = ({
       setIsLoading(true);
       try {
         console.log("📡 Fetching conversation history for session:", sessionId);
-        const response = await getConversationHistory(sessionId);
-        console.log("📦 History API response:", response);
 
-        if (response.user_data && response.user_data.conversation_history) {
+        // Inline API call to avoid component dependencies
+        const historyBase = ensureHttps(
+          import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
+            "https://api.bayshorecommunication.org/api/chatbot/history"
+        );
+        const historyUrl = `${historyBase}/${sessionId}`;
+
+        console.log("🔍 getConversationHistory called:", {
+          sessionId,
+          url: historyUrl,
+          apiKey,
+        });
+
+        const response = await fetch(historyUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+          },
+        });
+
+        console.log(
+          "📡 History API response status:",
+          response.status,
+          response.statusText
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("❌ History API error response:", errorText);
+          throw new Error(`API error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("📦 History API response data:", data);
+
+        // Use the fetched data as response
+        if (data.user_data && data.user_data.conversation_history) {
           console.log(
             "✅ Found conversation history:",
-            response.user_data.conversation_history.length,
+            data.user_data.conversation_history.length,
             "messages"
           );
 
-          if (response.user_data.agent_mode || response.agent_mode)
+          if (data.user_data.agent_mode || data.agent_mode)
             setIsAgentMode(true);
 
-          const hasAgentMessages = response.user_data.conversation_history.some(
+          const hasAgentMessages = data.user_data.conversation_history.some(
             (msg) =>
               msg.metadata?.type === "agent_message" || msg.metadata?.agent_id
           );
           if (hasAgentMessages) setIsAgentMode(true);
 
           const historyMessages = convertToMessages(
-            response.user_data.conversation_history
+            data.user_data.conversation_history
           );
           console.log("🔄 Converted history messages:", historyMessages.length);
 
           // Set messages immediately for faster loading
           setMessages(historyMessages);
-          if (response.mode) setCurrentMode(response.mode as BotMode);
+          if (data.mode) setCurrentMode(data.mode as BotMode);
 
           // Set batch loading flag for optimized rendering
           setBatchedMessages(true);
@@ -477,7 +471,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
     historyFetched,
     forceHistoryReload,
     sessionId,
-    getConversationHistory,
+    apiKey,
+    ensureHttps,
   ]);
 
   useEffect(() => {
