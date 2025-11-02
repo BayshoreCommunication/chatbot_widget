@@ -2,10 +2,16 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
+import { playMessageSound, playWelcomeSound } from "../../utils/soundUtils";
 import ChatBody from "./ChatBody";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
-import type { AppointmentSlot, BotMode, Message } from "./types";
+import type {
+  AppointmentSlot,
+  BotMode,
+  ChatbotSettings,
+  Message,
+} from "./types";
 
 interface ChatBotProps {
   apiKey?: string;
@@ -15,26 +21,6 @@ interface ChatBotProps {
   onToggleChat?: () => void;
   settings?: ChatbotSettings | null;
   welcomeApiBaseUrl?: string; // base for /api/chatbot/welcome-message
-}
-
-interface ChatbotSettings {
-  name: string;
-  selectedColor: string; // Now accepts any color string (hex, rgb, hsl, or predefined names)
-  leadCapture: boolean;
-  avatarUrl: string;
-  auto_open?: boolean;
-  intro_video?: {
-    enabled: boolean;
-    video_url: string | null;
-    video_filename: string | null;
-    autoplay: boolean;
-    duration: number;
-    show_on_first_visit: boolean;
-  };
-  // Legacy support for old video_url format
-  video_url?: string;
-  video_autoplay?: boolean; // ignored now; we always autoplay inline
-  video_duration?: number; // ignored now; we play inline
 }
 
 interface ConversationMessage {
@@ -400,11 +386,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
   }, [initiallyOpen, isOpen]);
 
   useEffect(() => {
-    if (settings?.auto_open && !isOpen) {
+    const autoOpenEnabled = settings?.auto_open_widget ?? settings?.auto_open;
+    if (autoOpenEnabled && !isOpen) {
       const t = setTimeout(() => setIsOpen(true), 2000);
       return () => clearTimeout(t);
     }
-  }, [settings?.auto_open, isOpen]);
+  }, [settings?.auto_open_widget, settings?.auto_open, isOpen]);
 
   useEffect(() => {
     if (!isOpen || historyFetched) return;
@@ -641,6 +628,26 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
 
+  // Play welcome sound on first load (if enabled)
+  useEffect(() => {
+    const soundSettings =
+      serverSettings?.sound_notifications || settings?.sound_notifications;
+
+    if (
+      soundSettings?.enabled &&
+      soundSettings?.welcome_sound?.enabled &&
+      soundSettings?.welcome_sound?.play_on_first_load
+    ) {
+      console.log("🔊 Playing welcome sound...");
+      // Small delay to ensure user has interacted with page (for autoplay policy)
+      const timer = setTimeout(() => {
+        playWelcomeSound();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [serverSettings?.sound_notifications, settings?.sound_notifications]);
+
   useEffect(() => {
     if (isOpen && apiKey) {
       setShowInstantReplies(false);
@@ -703,6 +710,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
     setMessages((prev) => [...prev, newUserMessage]);
     setBatchedMessages(false);
     setIsTyping(true);
+
+    // Play message send sound if enabled
+    const soundSettings =
+      serverSettings?.sound_notifications || settings?.sound_notifications;
+    if (
+      soundSettings?.enabled &&
+      soundSettings?.message_sound?.enabled &&
+      soundSettings?.message_sound?.play_on_send
+    ) {
+      console.log("🔊 Playing message send sound...");
+      playMessageSound();
+    }
 
     try {
       const response = await sendMessageToApi(text, sessionId);
