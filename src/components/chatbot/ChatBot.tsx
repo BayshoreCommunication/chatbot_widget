@@ -166,7 +166,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const getDefaultWelcome = useCallback(() => {
     // return "Hello! How can I help you today?";
-    return "Hello. Welcome to Carter Injury Law. My name is Miles, I'm here to assist you.";
+    return "Hello. Welcome to Ai Assistant develop by Bayai. How can I assist you today?";
   }, []);
 
   const fetchWelcomeMessage = useCallback(async () => {
