@@ -310,7 +310,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       console.log("📦 History API response data:", data);
       return data;
     },
-    [apiKey]
+    [apiKey, ensureHttps]
   );
 
   const sendMessageToApi = async (
@@ -461,7 +461,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     };
 
     run();
-  }, [isOpen, historyFetched, sessionId]);
+  }, [isOpen, historyFetched, sessionId, getConversationHistory]);
 
   useEffect(() => {
     if (batchedMessages && !isLoading) {
@@ -645,14 +645,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [serverSettings?.sound_notifications, settings?.sound_notifications]);
 
-  useEffect(() => {
-    if (isOpen && apiKey) {
-      // Fetch instant replies when chat opens
-      fetchInstantReplies().then(() => {});
-    }
-  }, [isOpen, apiKey]);
-
-  const fetchInstantReplies = async () => {
+  const fetchInstantReplies = useCallback(async () => {
     try {
       const apiUrl = ensureHttps(getNormalizedApiBase());
       const response = await fetch(`${apiUrl}/api/instant-reply`, {
@@ -681,7 +674,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
     } catch {
       return false;
     }
-  };
+  }, [apiKey, ensureHttps, getNormalizedApiBase]);
+
+  useEffect(() => {
+    if (isOpen && apiKey) {
+      // Fetch instant replies when chat opens
+      fetchInstantReplies().then(() => {});
+    }
+  }, [isOpen, apiKey, fetchInstantReplies]);
 
   // helpers
   const convertToMessages = (history: ConversationMessage[]): Message[] =>
