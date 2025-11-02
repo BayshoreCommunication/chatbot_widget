@@ -2,6 +2,12 @@
 // This script allows organizations to embed the chatbot on their website
 
 (function () {
+  // Helper to ensure all URLs use HTTPS (prevents mixed content errors)
+  function ensureHttps(url) {
+    if (!url) return url;
+    return url.replace(/^http:\/\//i, "https://");
+  }
+
   // Widget configuration
   const widgetConfig = {
     apiKey: "",
@@ -213,8 +219,9 @@
   // Fetch chatbot settings with fallback
   async function fetchSettings() {
     try {
-      const apiUrl =
-        window.CHATBOT_API_URL || "https://api.bayshorecommunication.org";
+      const apiUrl = ensureHttps(
+        window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
+      );
       const response = await fetch(`${apiUrl}/api/chatbot/settings`, {
         method: "GET",
         headers: {
@@ -263,8 +270,9 @@
   // Helper function to fetch settings with a specific API key
   async function fetchSettingsWithKey(apiKey) {
     try {
-      const apiUrl =
-        window.CHATBOT_API_URL || "https://api.bayshorecommunication.org";
+      const apiUrl = ensureHttps(
+        window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
+      );
       const response = await fetch(`${apiUrl}/api/chatbot/settings`, {
         method: "GET",
         headers: {
@@ -784,8 +792,9 @@
       }
 
       try {
-        const apiUrl =
-          window.CHATBOT_API_URL || "https://api.bayshorecommunication.org";
+        const apiUrl = ensureHttps(
+          window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
+        );
         const response = await fetch(`${apiUrl}/api/instant-reply`, {
           headers: {
             "X-API-Key": widgetConfig.apiKey,

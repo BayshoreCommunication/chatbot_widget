@@ -1,6 +1,11 @@
 (() => {
   // public/widget/widget.js
   (function() {
+    function ensureHttps(url) {
+      if (!url)
+        return url;
+      return url.replace(/^http:\/\//i, "https://");
+    }
     const widgetConfig = {
       apiKey: "",
       position: "bottom-right",
@@ -159,7 +164,9 @@
     async function fetchSettings() {
       var _a, _b;
       try {
-        const apiUrl = window.CHATBOT_API_URL || "https://api.bayshorecommunication.org";
+        const apiUrl = ensureHttps(
+          window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
+        );
         const response = await fetch(`${apiUrl}/api/chatbot/settings`, {
           method: "GET",
           headers: {
@@ -200,7 +207,9 @@
     }
     async function fetchSettingsWithKey(apiKey) {
       try {
-        const apiUrl = window.CHATBOT_API_URL || "https://api.bayshorecommunication.org";
+        const apiUrl = ensureHttps(
+          window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
+        );
         const response = await fetch(`${apiUrl}/api/chatbot/settings`, {
           method: "GET",
           headers: {
@@ -647,7 +656,9 @@
           return;
         }
         try {
-          const apiUrl = window.CHATBOT_API_URL || "https://api.bayshorecommunication.org";
+          const apiUrl = ensureHttps(
+            window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
+          );
           const response = await fetch(`${apiUrl}/api/instant-reply`, {
             headers: {
               "X-API-Key": widgetConfig.apiKey

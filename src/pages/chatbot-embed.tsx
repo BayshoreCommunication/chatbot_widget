@@ -22,12 +22,20 @@ const ChatbotEmbedPage = () => {
   const [settings, setSettings] = useState<ChatbotSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper to ensure HTTPS URLs
+  const ensureHttps = useCallback((url: string): string => {
+    if (!url) return url;
+    return url.replace(/^http:\/\//i, "https://");
+  }, []);
+
   // Fetch chatbot settings
   const fetchSettings = useCallback(async (apiKey: string) => {
     try {
-      const apiUrl =
+      const apiUrl = ensureHttps(
         import.meta.env.VITE_API_CHATBOT_SETTINGS_URL ||
-        "https://api.bayshorecommunication.org/api/chatbot/settings";
+          "https://api.bayshorecommunication.org/api/chatbot/settings"
+      );
+      console.log("🔐 Fetching settings from:", apiUrl);
       const response = await fetch(apiUrl, {
         method: "GET",
         headers: {
