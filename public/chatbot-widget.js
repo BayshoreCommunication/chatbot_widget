@@ -6,6 +6,44 @@
         return url;
       return url.replace(/^http:\/\//i, "https://");
     }
+    let hasPlayedWelcomeSound = false;
+    function playWelcomeSound() {
+      if (hasPlayedWelcomeSound)
+        return;
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 523.25;
+        oscillator.type = "sine";
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+        hasPlayedWelcomeSound = true;
+      } catch (error) {
+        console.log("Audio not supported or blocked by browser");
+      }
+    }
+    function playMessageSound() {
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 800;
+        oscillator.type = "sine";
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+      } catch (error) {
+        console.log("Audio not supported or blocked by browser");
+      }
+    }
     const widgetConfig = {
       apiKey: "",
       position: "bottom-right",
@@ -573,7 +611,7 @@
       document.head.appendChild(style);
     }
     function createWidget() {
-      var _a, _b, _c;
+      var _a, _b, _c, _d, _e, _f, _g;
       const toggleButton = document.createElement("button");
       toggleButton.className = `chatbot-toggle-button ${widgetConfig.position}`;
       if ((_a = widgetConfig.settings) == null ? void 0 : _a.avatarUrl) {
@@ -592,9 +630,12 @@
       const instantReplyContainer = document.createElement("div");
       instantReplyContainer.className = `instant-reply-container ${widgetConfig.position}`;
       let instantReplyLoopRunning = false;
+      let instantReplyTimeouts = [];
       const iframe = document.createElement("iframe");
       iframe.className = "chatbot-iframe";
-      const widgetUrl = window.CHATBOT_WIDGET_URL || "https://aibotwidget.bayshorecommunication.org";
+      const widgetUrl = ensureHttps(
+        window.CHATBOT_WIDGET_URL || "https://aibotwidget.bayshorecommunication.org"
+      );
       const chatbotUrl = new URL(`${widgetUrl}/chatbot-embed`);
       chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
       chatbotUrl.searchParams.append("isWidget", "true");
@@ -607,6 +648,10 @@
       document.body.appendChild(widgetContainer);
       document.body.appendChild(instantReplyContainer);
       toggleButton.classList.add("animate-pulse-theme");
+      function clearInstantReplyTimeouts() {
+        instantReplyTimeouts.forEach((id) => clearTimeout(id));
+        instantReplyTimeouts = [];
+      }
       function closeWidget() {
         widgetContainer.classList.remove("visible");
         widgetContainer.classList.add("hidden");
@@ -620,6 +665,13 @@
           }, 500);
         }, 100);
         isOpen = false;
+        if (!instantReplyLoopRunning) {
+          const restartTimeout = setTimeout(() => {
+            instantReplyLoopRunning = false;
+            fetchInstantReplies();
+          }, 2e3);
+          instantReplyTimeouts.push(restartTimeout);
+        }
       }
       function openWidget() {
         toggleButton.classList.add("hidden");
@@ -633,6 +685,37 @@
           }
         }, 300);
         isOpen = true;
+        instantReplyContainer.innerHTML = "";
+        clearInstantReplyTimeouts();
+        instantReplyLoopRunning = false;
+      }
+      function showAllInstantReplies(messages) {
+        instantReplyContainer.innerHTML = "";
+        messages.forEach((messageObj, index) => {
+          const timeout = setTimeout(() => {
+            if (!isOpen) {
+              const popup = document.createElement("div");
+              popup.className = "instant-reply-popup";
+              popup.innerHTML = messageObj.message;
+              popup.addEventListener("click", () => {
+                openWidget();
+              });
+              instantReplyContainer.appendChild(popup);
+            }
+          }, index * 100);
+          instantReplyTimeouts.push(timeout);
+        });
+        const hideTimeout = setTimeout(() => {
+          const popups = instantReplyContainer.querySelectorAll(".instant-reply-popup");
+          popups.forEach((popup, index) => {
+            const fadeTimeout = setTimeout(() => {
+              popup.classList.add("fade-out");
+              setTimeout(() => popup.remove(), 300);
+            }, index * 50);
+            instantReplyTimeouts.push(fadeTimeout);
+          });
+        }, 1e4);
+        instantReplyTimeouts.push(hideTimeout);
       }
       function showInstantReply(message, displayDuration = 4e3) {
         const startTime = (/* @__PURE__ */ new Date()).toLocaleTimeString();
@@ -645,11 +728,12 @@
           instantReplyContainer.innerHTML = "";
         });
         instantReplyContainer.appendChild(popup);
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
           const endTime = (/* @__PURE__ */ new Date()).toLocaleTimeString();
           popup.classList.add("fade-out");
           setTimeout(() => popup.remove(), 300);
         }, displayDuration);
+        instantReplyTimeouts.push(timeout);
       }
       async function fetchInstantReplies() {
         if (instantReplyLoopRunning) {
@@ -669,28 +753,14 @@
             const messages = data.data.messages || [];
             if (messages.length > 0) {
               let showMessagesLoop = function() {
-                const loopStartTime = (/* @__PURE__ */ new Date()).toLocaleTimeString();
-                let currentTime = 0;
-                sortedMessages.forEach((messageObj, index) => {
-                  const scheduledTime = new Date(
-                    Date.now() + currentTime
-                  ).toLocaleTimeString();
-                  setTimeout(() => {
-                    if (!isOpen) {
-                      showInstantReply(messageObj.message, 4e3);
-                    } else {
-                      console.log(
-                        `\u2705 Message ${index + 1} will be shown inside chat interface`
-                      );
-                    }
-                  }, currentTime);
-                  currentTime += 6e3;
-                });
-                const totalCycleTime = currentTime + 2e3;
-                const nextLoopTime = new Date(
-                  Date.now() + totalCycleTime
-                ).toLocaleTimeString();
-                setTimeout(showMessagesLoop, totalCycleTime);
+                console.log("\u{1F504} Showing all instant reply messages...");
+                showAllInstantReplies(sortedMessages);
+                const loopTimeout = setTimeout(() => {
+                  if (!isOpen) {
+                    showMessagesLoop();
+                  }
+                }, 15e3);
+                instantReplyTimeouts.push(loopTimeout);
               };
               const sortedMessages = messages.sort((a, b) => a.order - b.order);
               instantReplyLoopRunning = true;
@@ -704,12 +774,19 @@
         }
       }
       window.addEventListener("message", (event) => {
+        var _a2, _b2, _c2;
         const widgetUrl2 = window.CHATBOT_WIDGET_URL || "https://aibotwidget.bayshorecommunication.org";
         if (event.origin !== widgetUrl2) {
           return;
         }
         if (event.data === "closeChatbot") {
           closeWidget();
+        }
+        if (event.data === "messageSent") {
+          const soundSettings2 = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
+          if ((soundSettings2 == null ? void 0 : soundSettings2.enabled) && ((_b2 = soundSettings2 == null ? void 0 : soundSettings2.message_sound) == null ? void 0 : _b2.enabled) && ((_c2 = soundSettings2 == null ? void 0 : soundSettings2.message_sound) == null ? void 0 : _c2.play_on_send)) {
+            playMessageSound();
+          }
         }
       });
       let isOpen = false;
@@ -720,9 +797,26 @@
           openWidget();
         }
       });
-      setTimeout(() => {
+      const initTimeout = setTimeout(() => {
         fetchInstantReplies();
-      }, 2e3);
+      }, 1e3);
+      instantReplyTimeouts.push(initTimeout);
+      if (((_d = widgetConfig.settings) == null ? void 0 : _d.auto_open_widget) || ((_e = widgetConfig.settings) == null ? void 0 : _e.auto_open)) {
+        console.log("\u{1F680} Auto-opening widget...");
+        const autoOpenTimeout = setTimeout(() => {
+          if (!isOpen) {
+            openWidget();
+          }
+        }, 500);
+        instantReplyTimeouts.push(autoOpenTimeout);
+      }
+      const soundSettings = (_f = widgetConfig.settings) == null ? void 0 : _f.sound_notifications;
+      if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_g = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _g.enabled)) {
+        console.log("\u{1F50A} Playing welcome sound...");
+        setTimeout(() => {
+          playWelcomeSound();
+        }, 1e3);
+      }
     }
     async function init() {
       if (parseConfig()) {

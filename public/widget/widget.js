@@ -8,6 +8,64 @@
     return url.replace(/^http:\/\//i, "https://");
   }
 
+  // Simple sound notification functions
+  let hasPlayedWelcomeSound = false;
+
+  function playWelcomeSound() {
+    if (hasPlayedWelcomeSound) return; // Only play once per session
+    try {
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 523.25; // C note
+      oscillator.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContext.currentTime + 0.5
+      );
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+
+      hasPlayedWelcomeSound = true;
+    } catch (error) {
+      console.log("Audio not supported or blocked by browser");
+    }
+  }
+
+  function playMessageSound() {
+    try {
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 800; // Higher pitch for message
+      oscillator.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContext.currentTime + 0.15
+      );
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.15);
+    } catch (error) {
+      console.log("Audio not supported or blocked by browser");
+    }
+  }
+
   // Widget configuration
   const widgetConfig = {
     apiKey: "",
@@ -675,17 +733,19 @@
     const instantReplyContainer = document.createElement("div");
     instantReplyContainer.className = `instant-reply-container ${widgetConfig.position}`;
 
-    // Flag to prevent multiple loops
+    // Flags and cleanup arrays
     let instantReplyLoopRunning = false;
+    let instantReplyTimeouts = [];
 
     // Create the iframe that will load the chatbot
     const iframe = document.createElement("iframe");
     iframe.className = "chatbot-iframe";
 
     // Set the iframe source to load the chatbot with the apiKey parameter
-    const widgetUrl =
+    const widgetUrl = ensureHttps(
       window.CHATBOT_WIDGET_URL ||
-      "https://aibotwidget.bayshorecommunication.org";
+        "https://aibotwidget.bayshorecommunication.org"
+    );
     const chatbotUrl = new URL(`${widgetUrl}/chatbot-embed`);
     chatbotUrl.searchParams.append("apiKey", widgetConfig.apiKey);
     chatbotUrl.searchParams.append("isWidget", "true");
@@ -708,6 +768,12 @@
     // Add a pulse animation to the button
     toggleButton.classList.add("animate-pulse-theme");
 
+    // Helper function to clear all instant reply timeouts
+    function clearInstantReplyTimeouts() {
+      instantReplyTimeouts.forEach((id) => clearTimeout(id));
+      instantReplyTimeouts = [];
+    }
+
     // Function to close the chat widget with animation
     function closeWidget() {
       // First start the animation
@@ -728,6 +794,15 @@
       }, 100);
 
       isOpen = false;
+
+      // Restart instant reply loop after a delay
+      if (!instantReplyLoopRunning) {
+        const restartTimeout = setTimeout(() => {
+          instantReplyLoopRunning = false;
+          fetchInstantReplies();
+        }, 2000);
+        instantReplyTimeouts.push(restartTimeout);
+      }
     }
 
     // Function to open the chat widget with animation
@@ -753,9 +828,57 @@
       }, 300);
 
       isOpen = true;
+
+      // Clear instant reply popups and stop loop when chat opens
+      instantReplyContainer.innerHTML = "";
+      clearInstantReplyTimeouts();
+      instantReplyLoopRunning = false;
     }
 
-    // Function to show instant reply popup
+    // Function to show all instant reply popups at once (stacked)
+    function showAllInstantReplies(messages) {
+      // Clear any existing popups
+      instantReplyContainer.innerHTML = "";
+
+      // Show all messages stacked with staggered animation
+      messages.forEach((messageObj, index) => {
+        const timeout = setTimeout(() => {
+          if (!isOpen) {
+            const popup = document.createElement("div");
+            popup.className = "instant-reply-popup";
+            popup.innerHTML = messageObj.message;
+
+            // Add click handler to open chat
+            popup.addEventListener("click", () => {
+              openWidget();
+            });
+
+            // Add to container
+            instantReplyContainer.appendChild(popup);
+          }
+        }, index * 100); // Stagger by 100ms for smooth appearance
+
+        instantReplyTimeouts.push(timeout);
+      });
+
+      // Auto-hide all popups after 10 seconds
+      const hideTimeout = setTimeout(() => {
+        const popups = instantReplyContainer.querySelectorAll(
+          ".instant-reply-popup"
+        );
+        popups.forEach((popup, index) => {
+          const fadeTimeout = setTimeout(() => {
+            popup.classList.add("fade-out");
+            setTimeout(() => popup.remove(), 300);
+          }, index * 50);
+          instantReplyTimeouts.push(fadeTimeout);
+        });
+      }, 10000);
+
+      instantReplyTimeouts.push(hideTimeout);
+    }
+
+    // Function to show instant reply popup (legacy - for single message)
     function showInstantReply(message, displayDuration = 4000) {
       const startTime = new Date().toLocaleTimeString();
 
@@ -777,11 +900,13 @@
       instantReplyContainer.appendChild(popup);
 
       // Auto remove after specified duration (4 seconds by default)
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         const endTime = new Date().toLocaleTimeString();
         popup.classList.add("fade-out");
         setTimeout(() => popup.remove(), 300);
       }, displayDuration);
+
+      instantReplyTimeouts.push(timeout);
     }
 
     // Function to fetch and display instant replies with continuous looping
@@ -817,42 +942,21 @@
             // Set flag to prevent multiple loops
             instantReplyLoopRunning = true;
 
-            // Function to show messages in a loop
+            // Function to show all messages at once, then loop
             function showMessagesLoop() {
-              const loopStartTime = new Date().toLocaleTimeString();
+              console.log("🔄 Showing all instant reply messages...");
 
-              let currentTime = 0;
+              // Show all messages at once (stacked)
+              showAllInstantReplies(sortedMessages);
 
-              sortedMessages.forEach((messageObj, index) => {
-                const scheduledTime = new Date(
-                  Date.now() + currentTime
-                ).toLocaleTimeString();
+              // Schedule next loop after 15 seconds (10s display + 5s pause)
+              const loopTimeout = setTimeout(() => {
+                if (!isOpen) {
+                  showMessagesLoop();
+                }
+              }, 15000);
 
-                setTimeout(() => {
-                  if (!isOpen) {
-                    // Only show if chat is not open
-                    showInstantReply(messageObj.message, 4000); // Show for 4 seconds
-                  } else {
-                    console.log(
-                      `✅ Message ${
-                        index + 1
-                      } will be shown inside chat interface`
-                    );
-                  }
-                }, currentTime);
-
-                // Next message should start after: current message display time (4s) + interval (2s)
-                currentTime += 6000; // 4000ms display + 2000ms interval
-              });
-
-              // Schedule next loop: after all messages are done + 2 second interval
-              // Total time = last message start + 4s display + 2s interval
-              const totalCycleTime = currentTime + 2000;
-              const nextLoopTime = new Date(
-                Date.now() + totalCycleTime
-              ).toLocaleTimeString();
-
-              setTimeout(showMessagesLoop, totalCycleTime);
+              instantReplyTimeouts.push(loopTimeout);
             }
 
             // Start the message loop
@@ -880,6 +984,18 @@
       if (event.data === "closeChatbot") {
         closeWidget();
       }
+
+      // Handle message sent event for sound notification
+      if (event.data === "messageSent") {
+        const soundSettings = widgetConfig.settings?.sound_notifications;
+        if (
+          soundSettings?.enabled &&
+          soundSettings?.message_sound?.enabled &&
+          soundSettings?.message_sound?.play_on_send
+        ) {
+          playMessageSound();
+        }
+      }
     });
 
     // Toggle widget visibility when button is clicked
@@ -893,9 +1009,34 @@
     });
 
     // Start fetching instant replies after widget initialization
-    setTimeout(() => {
+    const initTimeout = setTimeout(() => {
       fetchInstantReplies();
-    }, 2000); // Wait 2 seconds after widget initialization
+    }, 1000); // Reduced from 2s to 1s
+
+    instantReplyTimeouts.push(initTimeout);
+
+    // Check if auto-open is enabled from API settings
+    if (
+      widgetConfig.settings?.auto_open_widget ||
+      widgetConfig.settings?.auto_open
+    ) {
+      console.log("🚀 Auto-opening widget...");
+      const autoOpenTimeout = setTimeout(() => {
+        if (!isOpen) {
+          openWidget();
+        }
+      }, 500); // Small delay for smooth UX
+      instantReplyTimeouts.push(autoOpenTimeout);
+    }
+
+    // Play welcome sound if enabled
+    const soundSettings = widgetConfig.settings?.sound_notifications;
+    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
+      console.log("🔊 Playing welcome sound...");
+      setTimeout(() => {
+        playWelcomeSound();
+      }, 1000); // Wait 1s for user interaction
+    }
   }
 
   // Initialize the widget

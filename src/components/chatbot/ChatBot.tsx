@@ -715,6 +715,15 @@ const ChatBot: React.FC<ChatBotProps> = ({
     ) {
       console.log("🔊 Playing message send sound...");
       playMessageSound();
+
+      // Notify parent widget if embedded
+      if (window.parent !== window) {
+        try {
+          window.parent.postMessage("messageSent", "*");
+        } catch (e) {
+          // Ignore errors
+        }
+      }
     }
 
     try {
