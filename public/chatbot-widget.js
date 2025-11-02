@@ -626,7 +626,7 @@
       document.head.appendChild(style);
     }
     function createWidget() {
-      var _a, _b, _c, _d, _e, _f, _g;
+      var _a, _b, _c, _d, _e;
       const toggleButton = document.createElement("button");
       toggleButton.className = `chatbot-toggle-button ${widgetConfig.position}`;
       if ((_a = widgetConfig.settings) == null ? void 0 : _a.avatarUrl) {
@@ -702,8 +702,8 @@
         }, 300);
         isOpen = true;
         if (!hasPlayedWelcomeSound) {
-          const soundSettings2 = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
-          if ((soundSettings2 == null ? void 0 : soundSettings2.enabled) && ((_b2 = soundSettings2 == null ? void 0 : soundSettings2.welcome_sound) == null ? void 0 : _b2.enabled)) {
+          const soundSettings = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
+          if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b2 = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _b2.enabled)) {
             console.log("\u{1F50A} Playing welcome sound on chat open (fallback)...");
             setTimeout(() => {
               playWelcomeSound();
@@ -810,8 +810,8 @@
           closeWidget();
         }
         if (event.data === "messageSent") {
-          const soundSettings2 = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
-          if ((soundSettings2 == null ? void 0 : soundSettings2.enabled) && ((_b2 = soundSettings2 == null ? void 0 : soundSettings2.message_sound) == null ? void 0 : _b2.enabled) && ((_c2 = soundSettings2 == null ? void 0 : soundSettings2.message_sound) == null ? void 0 : _c2.play_on_send)) {
+          const soundSettings = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
+          if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b2 = soundSettings == null ? void 0 : soundSettings.message_sound) == null ? void 0 : _b2.enabled) && ((_c2 = soundSettings == null ? void 0 : soundSettings.message_sound) == null ? void 0 : _c2.play_on_send)) {
             playMessageSound();
           }
         }
@@ -837,16 +837,9 @@
         }, 500);
         instantReplyTimeouts.push(autoOpenTimeout);
       }
-      const soundSettings = (_f = widgetConfig.settings) == null ? void 0 : _f.sound_notifications;
-      if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_g = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _g.enabled)) {
-        console.log("\u{1F50A} Playing welcome sound on widget load...");
-        const welcomeTimeout = setTimeout(() => {
-          playWelcomeSound();
-        }, 2500);
-        instantReplyTimeouts.push(welcomeTimeout);
-      }
     }
     async function init() {
+      var _a, _b;
       if (parseConfig()) {
         if (widgetConfig.apiKey) {
           const settingsLoaded = await fetchSettings();
@@ -867,6 +860,14 @@
           widgetConfig.apiKey
         );
         window.chatbotWidgetLoaded = true;
+        const soundSettings = (_a = widgetConfig.settings) == null ? void 0 : _a.sound_notifications;
+        if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _b.enabled)) {
+          console.log("\u{1F50A} Scheduling welcome sound for 2.5 seconds after page load...");
+          setTimeout(() => {
+            console.log("\u{1F50A} Playing welcome sound now...");
+            playWelcomeSound();
+          }, 2500);
+        }
       }
     }
     if (document.readyState === "loading") {

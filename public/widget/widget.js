@@ -1052,16 +1052,6 @@
       }, 500); // Small delay for smooth UX
       instantReplyTimeouts.push(autoOpenTimeout);
     }
-
-    // Play welcome sound automatically 2-3 seconds after widget loads
-    const soundSettings = widgetConfig.settings?.sound_notifications;
-    if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
-      console.log("🔊 Playing welcome sound on widget load...");
-      const welcomeTimeout = setTimeout(() => {
-        playWelcomeSound();
-      }, 2500); // 2.5 seconds delay
-      instantReplyTimeouts.push(welcomeTimeout);
-    }
   }
 
   // Initialize the widget
@@ -1089,6 +1079,18 @@
 
       // Mark widget as loaded for fallback detection
       window.chatbotWidgetLoaded = true;
+
+      // Play welcome sound 2-3 seconds AFTER widget is fully loaded and visible
+      const soundSettings = widgetConfig.settings?.sound_notifications;
+      if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
+        console.log(
+          "🔊 Scheduling welcome sound for 2.5 seconds after page load..."
+        );
+        setTimeout(() => {
+          console.log("🔊 Playing welcome sound now...");
+          playWelcomeSound();
+        }, 2500); // 2.5 seconds after widget is fully initialized
+      }
     }
   }
 
