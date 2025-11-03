@@ -166,14 +166,64 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const fetchWelcomeMessage = useCallback(async () => {
     try {
-      const base = ensureHttps(getNormalizedApiBase());
-      const url = `${base}/api/instant-reply`;
+      // Force HTTPS URL construction with explicit protocol
+      const baseUrl = getNormalizedApiBase();
+      const secureBase = ensureHttps(baseUrl);
+      const url = `${secureBase}/api/instant-reply`;
 
-      console.log("🔍 Fetching welcome message from:", url);
+      console.log("🔍 [INSTANT-REPLY] Raw base:", baseUrl);
+      console.log("🔍 [INSTANT-REPLY] Secure base:", secureBase);
+      console.log("🔍 [INSTANT-REPLY] Final URL:", url);
       console.log(
-        "🔍 Using API key:",
+        "🔍 [INSTANT-REPLY] API key:",
         apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c"
       );
+
+      // Verify URL is HTTPS before making request
+      if (!url.startsWith("https://")) {
+        console.error("❌ [INSTANT-REPLY] URL is not HTTPS! Forcing HTTPS...");
+        const fixedUrl = url.replace(/^http:\/\//i, "https://");
+        console.log("🔧 [INSTANT-REPLY] Fixed URL:", fixedUrl);
+
+        const response = await fetch(fixedUrl, {
+          headers: {
+            "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+          },
+        });
+
+        if (!response.ok) {
+          console.log("❌ [INSTANT-REPLY] API failed:", response.status);
+          setWelcomeMessage(getDefaultWelcome());
+          return;
+        }
+
+        const data = await response.json();
+        console.log("📥 [INSTANT-REPLY] API response:", data);
+
+        const isActive = data?.data?.isActive === true;
+        const msgs = Array.isArray(data?.data?.messages)
+          ? data.data.messages
+          : [];
+
+        if (data?.status === "success" && isActive && msgs.length > 0) {
+          const sorted = [...msgs].sort(
+            (a: { order?: number }, b: { order?: number }) =>
+              (a.order ?? 0) - (b.order ?? 0)
+          );
+          const firstMessage = sorted[0]?.message;
+          if (firstMessage && String(firstMessage).trim()) {
+            console.log(
+              "✅ [INSTANT-REPLY] Setting welcome message:",
+              firstMessage
+            );
+            setWelcomeMessage(String(firstMessage));
+            return;
+          }
+        }
+        console.log("⚠️ [INSTANT-REPLY] No active welcome message");
+        setWelcomeMessage(getDefaultWelcome());
+        return;
+      }
 
       const response = await fetch(url, {
         headers: {
@@ -182,19 +232,19 @@ const ChatBot: React.FC<ChatBotProps> = ({
       });
 
       if (!response.ok) {
-        console.log("❌ Welcome message API failed:", response.status);
-        setWelcomeMessage("Welcome message not found.");
+        console.log("❌ [INSTANT-REPLY] API failed:", response.status);
+        setWelcomeMessage(getDefaultWelcome());
         return;
       }
 
       const data = await response.json();
-      console.log("📥 Welcome message API response:", data);
+      console.log("📥 [INSTANT-REPLY] API response:", data);
 
-      // Use welcome message only when instant replies are active; pick lowest order
       const isActive = data?.data?.isActive === true;
       const msgs = Array.isArray(data?.data?.messages)
         ? data.data.messages
         : [];
+
       if (data?.status === "success" && isActive && msgs.length > 0) {
         const sorted = [...msgs].sort(
           (a: { order?: number }, b: { order?: number }) =>
@@ -202,15 +252,19 @@ const ChatBot: React.FC<ChatBotProps> = ({
         );
         const firstMessage = sorted[0]?.message;
         if (firstMessage && String(firstMessage).trim()) {
-          console.log("✅ Setting welcome message:", firstMessage);
+          console.log(
+            "✅ [INSTANT-REPLY] Setting welcome message:",
+            firstMessage
+          );
           setWelcomeMessage(String(firstMessage));
           return;
         }
       }
-      console.log("⚠️ No active welcome message in response");
+
+      console.log("⚠️ [INSTANT-REPLY] No active welcome message");
       setWelcomeMessage(getDefaultWelcome());
     } catch (error) {
-      console.log("💥 Error fetching welcome message:", error);
+      console.error("💥 [INSTANT-REPLY] Error:", error);
       setWelcomeMessage(getDefaultWelcome());
     }
   }, [apiKey, getNormalizedApiBase, getDefaultWelcome, ensureHttps]);
