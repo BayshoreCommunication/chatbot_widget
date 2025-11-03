@@ -865,11 +865,17 @@
 
       isOpen = true;
 
-      // Fallback: Play welcome sound on first open if it was blocked by autoplay policy
+      // ═══════════════════════════════════════════════════════════════
+      // FALLBACK: Play welcome sound ONLY if browser blocked it on page load
+      // This is NOT the primary trigger - primary is in init() function
+      // This only runs if autoplay policy prevented the page load sound
+      // ═══════════════════════════════════════════════════════════════
       if (!hasPlayedWelcomeSound) {
         const soundSettings = widgetConfig.settings?.sound_notifications;
         if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
-          console.log("🔊 Playing welcome sound on chat open (fallback)...");
+          console.log(
+            "🔊 Playing welcome sound on chat open (FALLBACK - browser blocked page load sound)..."
+          );
           setTimeout(() => {
             playWelcomeSound();
           }, 300); // Short delay for smooth UX
@@ -1121,26 +1127,31 @@
       window.chatbotWidgetLoaded = true;
       console.log("✅ Widget fully loaded and visible");
 
-      // Play welcome sound 2-3 seconds AFTER widget is fully loaded and visible
+      // ═══════════════════════════════════════════════════════════════
+      // WELCOME SOUND - FIRST LOAD (PAGE LOAD)
+      // This plays 2.5 seconds AFTER the page loads, NOT when user clicks
+      // Purpose: Grab user attention to the chat widget on the page
+      // ═══════════════════════════════════════════════════════════════
       const soundSettings = widgetConfig.settings?.sound_notifications;
       console.log("🔊 Checking sound settings:", soundSettings);
 
       if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
         console.log(
-          "🔊 ✅ Sound enabled! Scheduling welcome sound for 2.5 seconds..."
+          "🔊 ✅ Sound enabled! Scheduling welcome sound for 2.5 seconds after PAGE LOAD..."
         );
         console.log("🔊 Sound settings details:", {
           enabled: soundSettings.enabled,
           welcome_sound_enabled: soundSettings.welcome_sound.enabled,
           delay: 2500,
+          trigger: "PAGE LOAD (not user click)",
         });
 
         setTimeout(() => {
           console.log(
-            "🔊 ⏰ 2.5 seconds elapsed, playing welcome sound now..."
+            "🔊 ⏰ 2.5 seconds elapsed since PAGE LOAD, playing welcome sound now..."
           );
           playWelcomeSound();
-        }, 2500); // 2.5 seconds after widget is fully initialized
+        }, 2500); // 2.5 seconds after widget is fully initialized on PAGE LOAD
       } else {
         console.log("🔊 ❌ Welcome sound disabled or not configured");
         console.log("🔊 Debug info:", {

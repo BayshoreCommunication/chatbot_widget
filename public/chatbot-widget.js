@@ -245,7 +245,10 @@
         if (data.status === "success") {
           widgetConfig.settings = data.settings;
           console.log("\u2705 Settings loaded successfully:", widgetConfig.settings);
-          console.log("\u{1F50A} Sound notifications in settings:", (_b = widgetConfig.settings) == null ? void 0 : _b.sound_notifications);
+          console.log(
+            "\u{1F50A} Sound notifications in settings:",
+            (_b = widgetConfig.settings) == null ? void 0 : _b.sound_notifications
+          );
           return true;
         }
         console.warn("\u26A0\uFE0F Settings API returned non-success status");
@@ -718,7 +721,7 @@
         if (!hasPlayedWelcomeSound) {
           const soundSettings = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
           if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b2 = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _b2.enabled)) {
-            console.log("\u{1F50A} Playing welcome sound on chat open (fallback)...");
+            console.log("\u{1F50A} Playing welcome sound on chat open (FALLBACK - browser blocked page load sound)...");
             setTimeout(() => {
               playWelcomeSound();
             }, 300);
@@ -862,7 +865,10 @@
           console.log("\u{1F511} API Key found:", widgetConfig.apiKey);
           const settingsLoaded = await fetchSettings();
           console.log("\u2699\uFE0F Settings loaded:", settingsLoaded);
-          console.log("\u2699\uFE0F Sound settings:", (_a = widgetConfig.settings) == null ? void 0 : _a.sound_notifications);
+          console.log(
+            "\u2699\uFE0F Sound settings:",
+            (_a = widgetConfig.settings) == null ? void 0 : _a.sound_notifications
+          );
           if (!settingsLoaded) {
             console.log(
               "Failed to load settings from API, using default settings"
@@ -887,15 +893,18 @@
         console.log("\u{1F50A} Checking sound settings:", soundSettings);
         if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_c = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _c.enabled)) {
           console.log(
-            "\u{1F50A} \u2705 Sound enabled! Scheduling welcome sound for 2.5 seconds..."
+            "\u{1F50A} \u2705 Sound enabled! Scheduling welcome sound for 2.5 seconds after PAGE LOAD..."
           );
           console.log("\u{1F50A} Sound settings details:", {
             enabled: soundSettings.enabled,
             welcome_sound_enabled: soundSettings.welcome_sound.enabled,
-            delay: 2500
+            delay: 2500,
+            trigger: "PAGE LOAD (not user click)"
           });
           setTimeout(() => {
-            console.log("\u{1F50A} \u23F0 2.5 seconds elapsed, playing welcome sound now...");
+            console.log(
+              "\u{1F50A} \u23F0 2.5 seconds elapsed since PAGE LOAD, playing welcome sound now..."
+            );
             playWelcomeSound();
           }, 2500);
         } else {
