@@ -795,9 +795,10 @@
           const response = await fetch(`${apiUrl}/api/instant-reply`, {
             method: "GET",
             headers: {
-              "X-API-Key": widgetConfig.apiKey,
-              "Content-Type": "application/json"
-            }
+              "X-API-Key": widgetConfig.apiKey
+            },
+            mode: "cors",
+            credentials: "omit"
           });
           if (!response.ok) {
             console.error("\u274C Instant reply API error:", response.status, response.statusText);
