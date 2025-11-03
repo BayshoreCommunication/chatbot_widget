@@ -10,7 +10,8 @@ export default defineConfig({
     proxy: {
       "/api": {
         target:
-          process.env.VITE_API_URL || "https://api.bayshorecommunication.org",
+          process.env.VITE_API_BASE_URL ||
+          "https://api.bayshorecommunication.org",
         changeOrigin: true,
         secure: false,
       },
@@ -19,32 +20,32 @@ export default defineConfig({
   define: {
     "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
       (
-        process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
+        process.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
       ).replace(/^http:\/\//i, "https://")
     ),
     "import.meta.env.VITE_API_CHATBOT_SETTINGS_URL": JSON.stringify(
       `${(
-        process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
+        process.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
       ).replace(/^http:\/\//i, "https://")}/api/chatbot/settings`
     ),
     "import.meta.env.VITE_API_CHATBOT_URL": JSON.stringify(
       `${(
-        process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
+        process.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
       ).replace(/^http:\/\//i, "https://")}/api/chatbot/ask`
     ),
     "import.meta.env.VITE_API_CHATBOT_HISTORY_URL": JSON.stringify(
       `${(
-        process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
+        process.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
       ).replace(/^http:\/\//i, "https://")}/api/chatbot/history`
     ),
     "import.meta.env.VITE_API_INSTANT_REPLY_URL": JSON.stringify(
       `${(
-        process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
+        process.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
       ).replace(/^http:\/\//i, "https://")}/api/instant-reply`
     ),
     "import.meta.env.VITE_SOCKET_URL": JSON.stringify(
       (
-        process.env.VITE_API_URL || "https://api.bayshorecommunication.org"
+        process.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
       ).replace(/^http:\/\//i, "https://")
     ),
     "import.meta.env.VITE_WIDGET_EMBED_URL": JSON.stringify(
