@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 // https://vite.dev/config
+// IMPORTANT: All API URLs are forced to HTTPS to prevent mixed content errors
 export default defineConfig({
   plugins: [react()],
   server: {
