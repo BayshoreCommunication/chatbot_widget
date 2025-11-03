@@ -213,13 +213,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
       console.log("💥 Error fetching welcome message:", error);
       setWelcomeMessage(getDefaultWelcome());
     }
-  }, [
-    apiKey,
-    welcomeApiBaseUrl,
-    getNormalizedApiBase,
-    getDefaultWelcome,
-    ensureHttps,
-  ]);
+  }, [apiKey, getNormalizedApiBase, getDefaultWelcome, ensureHttps]);
 
   const fetchSettings = useCallback(async () => {
     try {
