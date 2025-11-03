@@ -1,10 +1,12 @@
-// Chatbot Widget Script
+// Chatbot Widget Script v1.0.1
 // This script allows organizations to embed the chatbot on their website
+// Updated: Fixed HTTPS enforcement for all API calls
 
 (function () {
   // Helper to ensure all URLs use HTTPS (prevents mixed content errors)
   function ensureHttps(url) {
     if (!url) return url;
+    // Force HTTPS for all API requests to prevent mixed content errors
     return url.replace(/^http:\/\//i, "https://");
   }
 
