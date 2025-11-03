@@ -1146,12 +1146,31 @@
           trigger: "PAGE LOAD (not user click)",
         });
 
-        setTimeout(() => {
+        // Store timer reference to prevent it from being garbage collected
+        const welcomeSoundTimer = setTimeout(() => {
           console.log(
             "🔊 ⏰ 2.5 seconds elapsed since PAGE LOAD, playing welcome sound now..."
           );
-          playWelcomeSound();
+          console.log("🔊 About to call playWelcomeSound()...");
+          try {
+            playWelcomeSound();
+            console.log("🔊 playWelcomeSound() call completed");
+          } catch (error) {
+            console.error("🔊 ❌ Error calling playWelcomeSound():", error);
+          }
         }, 2500); // 2.5 seconds after widget is fully initialized on PAGE LOAD
+
+        console.log("🔊 Timer scheduled with ID:", welcomeSoundTimer);
+
+        // Verify timer is still pending after 1 second
+        setTimeout(() => {
+          console.log("🔊 [1s checkpoint] Timer should still be pending...");
+        }, 1000);
+
+        // Verify timer is about to execute
+        setTimeout(() => {
+          console.log("🔊 [2.4s checkpoint] Timer should execute in 100ms...");
+        }, 2400);
       } else {
         console.log("🔊 ❌ Welcome sound disabled or not configured");
         console.log("🔊 Debug info:", {

@@ -721,7 +721,9 @@
         if (!hasPlayedWelcomeSound) {
           const soundSettings = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
           if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b2 = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _b2.enabled)) {
-            console.log("\u{1F50A} Playing welcome sound on chat open (FALLBACK - browser blocked page load sound)...");
+            console.log(
+              "\u{1F50A} Playing welcome sound on chat open (FALLBACK - browser blocked page load sound)..."
+            );
             setTimeout(() => {
               playWelcomeSound();
             }, 300);
@@ -901,12 +903,25 @@
             delay: 2500,
             trigger: "PAGE LOAD (not user click)"
           });
-          setTimeout(() => {
+          const welcomeSoundTimer = setTimeout(() => {
             console.log(
               "\u{1F50A} \u23F0 2.5 seconds elapsed since PAGE LOAD, playing welcome sound now..."
             );
-            playWelcomeSound();
+            console.log("\u{1F50A} About to call playWelcomeSound()...");
+            try {
+              playWelcomeSound();
+              console.log("\u{1F50A} playWelcomeSound() call completed");
+            } catch (error) {
+              console.error("\u{1F50A} \u274C Error calling playWelcomeSound():", error);
+            }
           }, 2500);
+          console.log("\u{1F50A} Timer scheduled with ID:", welcomeSoundTimer);
+          setTimeout(() => {
+            console.log("\u{1F50A} [1s checkpoint] Timer should still be pending...");
+          }, 1e3);
+          setTimeout(() => {
+            console.log("\u{1F50A} [2.4s checkpoint] Timer should execute in 100ms...");
+          }, 2400);
         } else {
           console.log("\u{1F50A} \u274C Welcome sound disabled or not configured");
           console.log("\u{1F50A} Debug info:", {
