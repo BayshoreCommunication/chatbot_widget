@@ -166,10 +166,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const fetchWelcomeMessage = useCallback(async () => {
     try {
-      const base = ensureHttps(
-        (welcomeApiBaseUrl && welcomeApiBaseUrl.trim().replace(/\/+$/, "")) ||
-          getNormalizedApiBase()
-      );
+      const base = ensureHttps(getNormalizedApiBase());
       const url = `${base}/api/instant-reply`;
 
       console.log("🔍 Fetching welcome message from:", url);
