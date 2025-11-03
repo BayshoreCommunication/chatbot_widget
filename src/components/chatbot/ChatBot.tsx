@@ -226,7 +226,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const fetchSettings = useCallback(async () => {
     try {
-      const base = getNormalizedApiBase();
+      const base = ensureHttps(getNormalizedApiBase());
       const url = `${base}/api/chatbot/settings`;
       console.log("🔍 Fetching organization settings from:", url);
       const response = await fetch(url, {
@@ -245,7 +245,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     } catch (e) {
       console.log("💥 Error fetching settings:", e);
     }
-  }, [apiKey, getNormalizedApiBase]);
+  }, [apiKey, getNormalizedApiBase, ensureHttps]);
 
   const parseAppointmentSlots = (
     text: string
