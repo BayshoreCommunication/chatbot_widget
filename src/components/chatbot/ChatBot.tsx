@@ -368,100 +368,114 @@ const ChatBot: React.FC<ChatBotProps> = ({
       sessionId,
     });
 
-    const run = async () => {
-      // Always use in-memory sessionId to avoid race with localStorage
-      setIsLoading(true);
-      try {
-        console.log("📡 Fetching conversation history for session:", sessionId);
-
-        // Inline API call to avoid component dependencies
-        const historyBase = ensureHttps(
-          import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
-            "https://api.bayshorecommunication.org/api/chatbot/history"
-        );
-        const historyUrl = `${historyBase}/${sessionId}`;
-
-        console.log("🔍 getConversationHistory called:", {
-          sessionId,
-          url: historyUrl,
-          apiKey,
-        });
-
-        const response = await fetch(historyUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
-          },
-        });
-
-        console.log(
-          "📡 History API response status:",
-          response.status,
-          response.statusText
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("❌ History API error response:", errorText);
-          throw new Error(`API error: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log("📦 History API response data:", data);
-
-        // Use the fetched data as response
-        if (data.user_data && data.user_data.conversation_history) {
+    // Add delay to allow chat animation and instant replies to render first
+    const delayTimer = setTimeout(() => {
+      const run = async () => {
+        // Always use in-memory sessionId to avoid race with localStorage
+        setIsLoading(true);
+        try {
           console.log(
-            "✅ Found conversation history:",
-            data.user_data.conversation_history.length,
-            "messages"
+            "📡 Fetching conversation history for session:",
+            sessionId
           );
 
-          if (data.user_data.agent_mode || data.agent_mode)
-            setIsAgentMode(true);
-
-          const hasAgentMessages = data.user_data.conversation_history.some(
-            (msg) =>
-              msg.metadata?.type === "agent_message" || msg.metadata?.agent_id
+          // Inline API call to avoid component dependencies
+          const historyBase = ensureHttps(
+            import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
+              "https://api.bayshorecommunication.org/api/chatbot/history"
           );
-          if (hasAgentMessages) setIsAgentMode(true);
+          const historyUrl = `${historyBase}/${sessionId}`;
 
-          const historyMessages = convertToMessages(
-            data.user_data.conversation_history
+          console.log("🔍 getConversationHistory called:", {
+            sessionId,
+            url: historyUrl,
+            apiKey,
+          });
+
+          const response = await fetch(historyUrl, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
+            },
+          });
+
+          console.log(
+            "📡 History API response status:",
+            response.status,
+            response.statusText
           );
-          console.log("🔄 Converted history messages:", historyMessages.length);
 
-          // Set messages immediately for faster loading
-          setMessages(historyMessages);
-          if (data.mode) setCurrentMode(data.mode as BotMode);
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ History API error response:", errorText);
+            throw new Error(`API error: ${response.status} - ${errorText}`);
+          }
 
-          // Set batch loading flag for optimized rendering
-          setBatchedMessages(true);
-          setIsPositioningScroll(true);
+          const data = await response.json();
+          console.log("📦 History API response data:", data);
 
-          // Quick scroll and cleanup after minimal delay
-          setTimeout(() => {
-            forceScrollToBottom();
+          // Use the fetched data as response
+          if (data.user_data && data.user_data.conversation_history) {
+            console.log(
+              "✅ Found conversation history:",
+              data.user_data.conversation_history.length,
+              "messages"
+            );
+
+            if (data.user_data.agent_mode || data.agent_mode)
+              setIsAgentMode(true);
+
+            const hasAgentMessages = data.user_data.conversation_history.some(
+              (msg) =>
+                msg.metadata?.type === "agent_message" || msg.metadata?.agent_id
+            );
+            if (hasAgentMessages) setIsAgentMode(true);
+
+            const historyMessages = convertToMessages(
+              data.user_data.conversation_history
+            );
+            console.log(
+              "🔄 Converted history messages:",
+              historyMessages.length
+            );
+
+            // Hide instant replies before showing history
+            setShowInstantReplies(false);
+
+            // Set messages immediately for faster loading
+            setMessages(historyMessages);
+            if (data.mode) setCurrentMode(data.mode as BotMode);
+
+            // Set batch loading flag for optimized rendering
+            setBatchedMessages(true);
+            setIsPositioningScroll(true);
+
+            // Quick scroll and cleanup after minimal delay
+            setTimeout(() => {
+              forceScrollToBottom();
+              setIsLoading(false);
+              setIsPositioningScroll(false);
+              console.log("✅ History loading complete");
+            }, 100); // Reduced from 900ms to 100ms
+          } else {
+            console.log("⚠️ No conversation history found in response");
             setIsLoading(false);
-            setIsPositioningScroll(false);
-            console.log("✅ History loading complete");
-          }, 100); // Reduced from 900ms to 100ms
-        } else {
-          console.log("⚠️ No conversation history found in response");
+            setIsTyping(false);
+          }
+        } catch (error) {
+          console.error("❌ Error loading conversation history:", error);
           setIsLoading(false);
           setIsTyping(false);
+        } finally {
+          setHistoryFetched(true);
         }
-      } catch (error) {
-        console.error("❌ Error loading conversation history:", error);
-        setIsLoading(false);
-        setIsTyping(false);
-      } finally {
-        setHistoryFetched(true);
-      }
-    };
+      };
 
-    run();
+      run();
+    }, 300); // Wait 300ms for chat animation and instant replies to render
+
+    return () => clearTimeout(delayTimer);
   }, [isOpen, historyFetched, sessionId, apiKey, ensureHttps]);
 
   useEffect(() => {

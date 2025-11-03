@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5174",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run build:widget && npm run copy-widget",
     "build:widget": "node scripts/build-widget.js",
+    "copy-widget": "node -e \"const fs=require('fs');fs.copyFileSync('public/chatbot-widget.min.js','dist/chatbot-widget.min.js');fs.copyFileSync('public/chatbot-widget.js','dist/chatbot-widget.js');console.log('✓ Widget files copied to dist/')\"",
     "test:widget": "npm run build:widget && node scripts/serve-test.js",
     "serve:test": "node scripts/serve-test.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "vercel --prod"
+    "deploy": "npm run build && vercel --prod --force"
   },
   "dependencies": {
     "framer-motion": "^10.16.4",
