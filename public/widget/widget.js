@@ -835,6 +835,7 @@
 
       // Restart instant reply loop after a delay
       if (!instantReplyLoopRunning) {
+        instantReplyLoopRunning = true;
         const restartTimeout = setTimeout(() => {
           instantReplyLoopRunning = false;
           fetchInstantReplies();
@@ -978,10 +979,16 @@
         console.log("🔐 DEBUG: Instant Reply API URL:", `${apiUrl}/api/instant-reply`);
         console.log("🔐 DEBUG: Raw CHATBOT_API_URL:", window.CHATBOT_API_URL);
         const response = await fetch(`${apiUrl}/api/instant-reply`, {
+          method: "GET",
           headers: {
             "X-API-Key": widgetConfig.apiKey,
+            "Content-Type": "application/json"
           },
         });
+        if (!response.ok) {
+          console.error("❌ Instant reply API error:", response.status, response.statusText);
+          return;
+        }
         const data = await response.json();
 
         if (

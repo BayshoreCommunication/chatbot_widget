@@ -698,6 +698,7 @@
         }, 100);
         isOpen = false;
         if (!instantReplyLoopRunning) {
+          instantReplyLoopRunning = true;
           const restartTimeout = setTimeout(() => {
             instantReplyLoopRunning = false;
             fetchInstantReplies();
@@ -792,10 +793,16 @@
           console.log("\u{1F510} DEBUG: Instant Reply API URL:", `${apiUrl}/api/instant-reply`);
           console.log("\u{1F510} DEBUG: Raw CHATBOT_API_URL:", window.CHATBOT_API_URL);
           const response = await fetch(`${apiUrl}/api/instant-reply`, {
+            method: "GET",
             headers: {
-              "X-API-Key": widgetConfig.apiKey
+              "X-API-Key": widgetConfig.apiKey,
+              "Content-Type": "application/json"
             }
           });
+          if (!response.ok) {
+            console.error("\u274C Instant reply API error:", response.status, response.statusText);
+            return;
+          }
           const data = await response.json();
           if (data && data.status === "success" && data.data && data.data.isActive) {
             const messages = data.data.messages || [];
