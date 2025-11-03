@@ -789,6 +789,8 @@
           const apiUrl = ensureHttps(
             window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
           );
+          console.log("\u{1F510} DEBUG: Instant Reply API URL:", `${apiUrl}/api/instant-reply`);
+          console.log("\u{1F510} DEBUG: Raw CHATBOT_API_URL:", window.CHATBOT_API_URL);
           const response = await fetch(`${apiUrl}/api/instant-reply`, {
             headers: {
               "X-API-Key": widgetConfig.apiKey
