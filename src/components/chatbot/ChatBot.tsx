@@ -354,7 +354,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   useEffect(() => {
     // Load history when chat opens and history hasn't been fetched yet
-    if (!isOpen || historyFetched) return;
+    if (!isOpen) {
+      // Reset history flag when chat closes so it reloads on next open
+      if (historyFetched) setHistoryFetched(false);
+      return;
+    }
+
+    if (historyFetched) return;
 
     console.log("🔄 Chat opened, loading history...", {
       isOpen,
@@ -1004,10 +1010,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
             onClick={() => {
               setShowTooltip(false);
               if (!isOpen) {
-                // Reset history flag before opening to ensure reload
-                setHistoryFetched(false);
-                // Small delay to ensure state update completes
-                setTimeout(() => setIsOpen(true), 0);
+                // Open chat immediately - history will load via useEffect
+                setIsOpen(true);
                 setTimeout(() => forceScrollToBottom(), 800);
               } else {
                 setIsOpen(false);
@@ -1071,10 +1075,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
                 toggleChat={() => {
                   setShowTooltip(false);
                   if (!isOpen) {
-                    // Reset history flag before opening to ensure reload
-                    setHistoryFetched(false);
-                    // Small delay to ensure state update completes
-                    setTimeout(() => setIsOpen(true), 0);
+                    // Open chat immediately - history will load via useEffect
+                    setIsOpen(true);
                     setTimeout(() => forceScrollToBottom(), 800);
                   } else {
                     setIsOpen(false);

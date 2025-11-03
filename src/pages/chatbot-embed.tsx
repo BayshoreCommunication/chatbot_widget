@@ -106,13 +106,6 @@ const ChatbotEmbedPage = () => {
             }}
           >
             <ChatBot
-              key={
-                settings
-                  ? isAutoOpenEnabled(settings)
-                    ? "chatbot-open"
-                    : "chatbot-closed"
-                  : "chatbot-loading"
-              }
               apiKey={apiKey}
               embedded={true}
               initiallyOpen={isAutoOpenEnabled(settings)}
