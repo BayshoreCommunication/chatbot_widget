@@ -976,20 +976,29 @@
         const apiUrl = ensureHttps(
           window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
         );
-        console.log("🔐 DEBUG: Instant Reply API URL:", `${apiUrl}/api/instant-reply`);
+        console.log(
+          "🔐 DEBUG: Instant Reply API URL:",
+          `${apiUrl}/api/instant-reply`
+        );
         console.log("🔐 DEBUG: Raw CHATBOT_API_URL:", window.CHATBOT_API_URL);
+
         const response = await fetch(`${apiUrl}/api/instant-reply`, {
           method: "GET",
           headers: {
-            "X-API-Key": widgetConfig.apiKey
+            "X-API-Key": widgetConfig.apiKey,
           },
           mode: "cors",
-          credentials: "omit"
+          credentials: "omit",
         });
+
         if (!response.ok) {
-          console.error("❌ Instant reply API error:", response.status, response.statusText);
+          console.error("❌ Instant reply API error:", {
+            status: response?.status || "No response",
+            statusText: response?.statusText || "Network error",
+          });
           return;
         }
+
         const data = await response.json();
 
         if (
@@ -1031,7 +1040,11 @@
           console.log("❌ Instant replies not active or no messages available");
         }
       } catch (error) {
-        console.error("💥 Error fetching instant replies:", error);
+        console.error(
+          "💥 Error fetching instant replies:",
+          error?.message || error
+        );
+        // Don't throw error - just log it and continue
       }
     }
 

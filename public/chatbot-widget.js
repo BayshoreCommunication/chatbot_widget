@@ -801,7 +801,10 @@
             credentials: "omit"
           });
           if (!response.ok) {
-            console.error("\u274C Instant reply API error:", response.status, response.statusText);
+            console.error("\u274C Instant reply API error:", {
+              status: (response == null ? void 0 : response.status) || "No response",
+              statusText: (response == null ? void 0 : response.statusText) || "Network error"
+            });
             return;
           }
           const data = await response.json();
@@ -826,7 +829,7 @@
             console.log("\u274C Instant replies not active or no messages available");
           }
         } catch (error) {
-          console.error("\u{1F4A5} Error fetching instant replies:", error);
+          console.error("\u{1F4A5} Error fetching instant replies:", (error == null ? void 0 : error.message) || error);
         }
       }
       window.addEventListener("message", (event) => {
