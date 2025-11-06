@@ -1105,71 +1105,82 @@ const ChatBot: React.FC<ChatBotProps> = ({
           </AnimatePresence>
         )}
 
-        {!embedded && (
-          <motion.button
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
-            style={{ pointerEvents: "auto", cursor: "pointer" }}
-            onMouseEnter={() => console.log("🖱️ Mouse entered button")}
-            onMouseDown={(e) => {
-              console.log("🖱️ Mouse DOWN on button", e);
-              e.stopPropagation();
-            }}
-            onMouseUp={(e) => {
-              console.log("🖱️ Mouse UP on button", e);
-              e.stopPropagation();
-            }}
-            onClick={(e) => {
-              console.log("🖱️ CHATBOT BUTTON CLICKED! Event:", e);
-              e.stopPropagation(); // Prevent parent from handling
-              console.log("🖱️ CHATBOT BUTTON CLICKED! Current state:", {
-                isOpen,
-                historyFetched,
-                messagesCount: messages.length,
-              });
+        {!embedded &&
+          (() => {
+            console.log("🎯 BUTTON RENDER CHECK:", {
+              embedded,
+              shouldRender: !embedded,
+            });
+            return (
+              <motion.button
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
+                style={{
+                  pointerEvents: "auto",
+                  cursor: "pointer",
+                  zIndex: 9999,
+                }}
+                onMouseEnter={() => console.log("🖱️ Mouse entered button")}
+                onMouseDown={(e) => {
+                  console.log("🖱️ Mouse DOWN on button", e);
+                  e.stopPropagation();
+                }}
+                onMouseUp={(e) => {
+                  console.log("🖱️ Mouse UP on button", e);
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  console.log("🖱️ CHATBOT BUTTON CLICKED! Event:", e);
+                  e.stopPropagation(); // Prevent parent from handling
+                  console.log("🖱️ CHATBOT BUTTON CLICKED! Current state:", {
+                    isOpen,
+                    historyFetched,
+                    messagesCount: messages.length,
+                  });
 
-              setShowTooltip(false);
-              if (!isOpen) {
-                console.log("✅ Opening chat (was closed)...");
-                // Open chat immediately - history will load via useEffect
-                setIsOpen(true);
-                console.log("✅ setIsOpen(true) called");
-                setTimeout(() => forceScrollToBottom(), 800);
-              } else {
-                console.log("❌ Closing chat (was open)...");
-                setIsOpen(false);
-                console.log("❌ setIsOpen(false) called");
-              }
-              if (tooltipTimeoutRef.current)
-                clearTimeout(tooltipTimeoutRef.current);
-              onToggleChat?.();
-            }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            {settings?.avatarUrl ? (
-              <img
-                src={settings.avatarUrl}
-                alt="Assistant"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 sm:h-8 sm:w-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                  setShowTooltip(false);
+                  if (!isOpen) {
+                    console.log("✅ Opening chat (was closed)...");
+                    // Open chat immediately - history will load via useEffect
+                    setIsOpen(true);
+                    console.log("✅ setIsOpen(true) called");
+                    setTimeout(() => forceScrollToBottom(), 800);
+                  } else {
+                    console.log("❌ Closing chat (was open)...");
+                    setIsOpen(false);
+                    console.log("❌ setIsOpen(false) called");
+                  }
+                  if (tooltipTimeoutRef.current)
+                    clearTimeout(tooltipTimeoutRef.current);
+                  onToggleChat?.();
+                }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                />
-              </svg>
-            )}
-          </motion.button>
-        )}
+                {settings?.avatarUrl ? (
+                  <img
+                    src={settings.avatarUrl}
+                    alt="Assistant"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 sm:h-8 sm:w-8"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    />
+                  </svg>
+                )}
+              </motion.button>
+            );
+          })()}
 
         <AnimatePresence>
           {(isOpen || embedded) && (
