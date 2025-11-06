@@ -352,6 +352,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [settings?.auto_open_widget, settings?.auto_open, isOpen]);
 
+  // Helper function to convert conversation history to messages
+  const convertToMessages = useCallback(
+    (history: ConversationMessage[]): Message[] =>
+      history.map((item, index) => ({
+        id: index.toString(),
+        text: item.content,
+        sender: item.role === "user" ? "user" : "bot",
+        timestamp: new Date(),
+      })),
+    []
+  );
+
   useEffect(() => {
     // Load history when chat opens and history hasn't been fetched yet
     if (!isOpen) {
@@ -486,7 +498,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }, 300); // Wait 300ms for chat animation and instant replies to render
 
     return () => clearTimeout(delayTimer);
-  }, [isOpen, historyFetched, sessionId, apiKey, ensureHttps]);
+  }, [
+    isOpen,
+    historyFetched,
+    sessionId,
+    apiKey,
+    ensureHttps,
+    convertToMessages,
+  ]);
 
   useEffect(() => {
     if (batchedMessages && !isLoading) {
@@ -777,15 +796,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
       fetchInstantReplies().then(() => {});
     }
   }, [isOpen, apiKey, fetchInstantReplies]);
-
-  // helpers
-  const convertToMessages = (history: ConversationMessage[]): Message[] =>
-    history.map((item, index) => ({
-      id: index.toString(),
-      text: item.content,
-      sender: item.role === "user" ? "user" : "bot",
-      timestamp: new Date(),
-    }));
 
   const sendMessage = async (text: string) => {
     handleUserInteraction();
