@@ -978,11 +978,11 @@
         );
         console.log(
           "🔐 DEBUG: Instant Reply API URL:",
-          `${apiUrl}/api/instant-reply`
+          `${apiUrl}/api/instant-reply/`
         );
         console.log("🔐 DEBUG: Raw CHATBOT_API_URL:", window.CHATBOT_API_URL);
 
-        const response = await fetch(`${apiUrl}/api/instant-reply`, {
+        const response = await fetch(`${apiUrl}/api/instant-reply/`, {
           method: "GET",
           headers: {
             "X-API-Key": widgetConfig.apiKey,

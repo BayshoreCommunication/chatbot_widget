@@ -166,7 +166,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   const fetchWelcomeMessage = useCallback(async () => {
     try {
-      const url = "https://api.bayshorecommunication.org/api/instant-reply";
+      const url = "https://api.bayshorecommunication.org/api/instant-reply/";
 
       console.log("🔍 [INSTANT-REPLY] Fetching from:", url);
 
@@ -733,7 +733,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   const fetchInstantReplies = useCallback(async () => {
     try {
       const apiUrl = ensureHttps(getNormalizedApiBase());
-      const response = await fetch(`${apiUrl}/api/instant-reply`, {
+      const response = await fetch(`${apiUrl}/api/instant-reply/`, {
         headers: {
           "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
         },

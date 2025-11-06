@@ -790,9 +790,12 @@
           const apiUrl = ensureHttps(
             window.CHATBOT_API_URL || "https://api.bayshorecommunication.org"
           );
-          console.log("\u{1F510} DEBUG: Instant Reply API URL:", `${apiUrl}/api/instant-reply`);
+          console.log(
+            "\u{1F510} DEBUG: Instant Reply API URL:",
+            `${apiUrl}/api/instant-reply/`
+          );
           console.log("\u{1F510} DEBUG: Raw CHATBOT_API_URL:", window.CHATBOT_API_URL);
-          const response = await fetch(`${apiUrl}/api/instant-reply`, {
+          const response = await fetch(`${apiUrl}/api/instant-reply/`, {
             method: "GET",
             headers: {
               "X-API-Key": widgetConfig.apiKey
@@ -829,7 +832,10 @@
             console.log("\u274C Instant replies not active or no messages available");
           }
         } catch (error) {
-          console.error("\u{1F4A5} Error fetching instant replies:", (error == null ? void 0 : error.message) || error);
+          console.error(
+            "\u{1F4A5} Error fetching instant replies:",
+            (error == null ? void 0 : error.message) || error
+          );
         }
       }
       window.addEventListener("message", (event) => {

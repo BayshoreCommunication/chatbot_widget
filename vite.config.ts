@@ -41,7 +41,7 @@ export default defineConfig({
     "import.meta.env.VITE_API_INSTANT_REPLY_URL": JSON.stringify(
       `${(
         process.env.VITE_API_BASE_URL || "https://api.bayshorecommunication.org"
-      ).replace(/^http:\/\//i, "https://")}/api/instant-reply`
+      ).replace(/^http:\/\//i, "https://")}/api/instant-reply/`
     ),
     "import.meta.env.VITE_SOCKET_URL": JSON.stringify(
       (
