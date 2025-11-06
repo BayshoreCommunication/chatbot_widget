@@ -95,6 +95,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
     []
   );
   const [showInstantReplies, setShowInstantReplies] = useState(false);
+  const [currentInstantReplyIndex, setCurrentInstantReplyIndex] = useState(0);
+  const instantReplyIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isAgentMode, setIsAgentMode] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(null);
@@ -717,8 +719,37 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [isOpen, apiKey, fetchInstantReplies]);
 
+  // Instant reply rotation effect - show one at a time with looping
+  useEffect(() => {
+    // Clear any existing interval
+    if (instantReplyIntervalRef.current) {
+      clearInterval(instantReplyIntervalRef.current);
+    }
+
+    // Only start rotation if we have instant replies showing and messages
+    if (showInstantReplies && instantReplies.length > 1) {
+      // Rotate through instant replies every 4 seconds
+      instantReplyIntervalRef.current = setInterval(() => {
+        setCurrentInstantReplyIndex(
+          (prevIndex) => (prevIndex + 1) % instantReplies.length
+        );
+      }, 4000);
+    }
+
+    // Cleanup on unmount or when instant replies change
+    return () => {
+      if (instantReplyIntervalRef.current) {
+        clearInterval(instantReplyIntervalRef.current);
+        instantReplyIntervalRef.current = null;
+      }
+    };
+  }, [showInstantReplies, instantReplies.length]);
+
   const sendMessage = async (text: string) => {
     handleUserInteraction();
+
+    // Hide instant replies when user sends a regular message
+    setShowInstantReplies(false);
 
     const newUserMessage: Message = {
       id: Date.now().toString(),
@@ -1076,6 +1107,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
                     isBatchLoading={batchedMessages}
                     forceScrollKey={forceScrollBottom}
                     instantReplies={instantReplies}
+                    currentInstantReplyIndex={currentInstantReplyIndex}
                     showInstantReplies={showInstantReplies}
                     onInstantReplyClick={handleInstantReplyClick}
                     settings={settings}

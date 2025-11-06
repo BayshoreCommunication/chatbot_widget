@@ -18,6 +18,7 @@ interface ChatBodyProps {
   onSlotSelect?: (slot: AppointmentSlot) => void;
   onSlotConfirm?: (slot: AppointmentSlot) => void;
   instantReplies?: InstantReplyMessage[];
+  currentInstantReplyIndex?: number;
   showInstantReplies?: boolean;
   onInstantReplyClick?: (message: string) => void;
   settings?: {
@@ -35,6 +36,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   onSlotSelect,
   onSlotConfirm,
   instantReplies = [],
+  currentInstantReplyIndex = 0,
   showInstantReplies = false,
   onInstantReplyClick,
   settings,
@@ -149,48 +151,57 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       }}
     >
       <div className="space-y-4">
-        {/* Instant Replies Section */}
-        <AnimatePresence>
+        {/* Instant Replies Section - Show ONE at a time with high z-index */}
+        <AnimatePresence mode="wait">
           {showInstantReplies && instantReplies.length > 0 && (
             <motion.div
-              className="space-y-3"
+              key={`instant-reply-${currentInstantReplyIndex}`}
+              className="relative z-50"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {instantReplies.map((reply, index) => (
-                <motion.div
-                  key={`instant-reply-${index}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{
-                    duration: 0.3,
-                    delay: index * 0.1,
-                  }}
-                  className="flex justify-start"
+              <div className="flex justify-start">
+                <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center mr-2 mt-1 overflow-hidden flex-shrink-0">
+                  {settings?.avatarUrl ? (
+                    <img
+                      src={settings.avatarUrl}
+                      alt={settings?.name || "Assistant"}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <RiRobot3Line className="text-indigo-300 text-xl" />
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() =>
+                    onInstantReplyClick?.(
+                      instantReplies[currentInstantReplyIndex].message
+                    )
+                  }
+                  className="max-w-[75%] bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg px-4 py-3 text-sm transition-all duration-200 cursor-pointer text-left shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center mr-2 mt-1 overflow-hidden flex-shrink-0">
-                    {settings?.avatarUrl ? (
-                      <img
-                        src={settings.avatarUrl}
-                        alt={settings?.name || "Assistant"}
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full">
-                        <RiRobot3Line className="text-indigo-300 text-xl" />
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => onInstantReplyClick?.(reply.message)}
-                    className="max-w-[75%] bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg px-4 py-3 text-sm transition-all duration-200 cursor-pointer text-left shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    {reply.message}
-                  </button>
-                </motion.div>
-              ))}
+                  {instantReplies[currentInstantReplyIndex].message}
+                </button>
+              </div>
+              {/* Indicator dots to show there are more instant replies */}
+              {instantReplies.length > 1 && (
+                <div className="flex justify-start ml-10 mt-2 space-x-1">
+                  {instantReplies.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-1.5 h-1.5 rounded-full transition-all ${
+                        index === currentInstantReplyIndex
+                          ? "bg-indigo-500 w-3"
+                          : "bg-gray-600"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

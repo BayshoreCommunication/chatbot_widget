@@ -281,7 +281,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
       <div className="max-w-[100%] flex flex-col">
         <motion.div
-          className={`rounded-lg px-4 py-2 ${
+          className={`rounded-lg px-4 py-2 relative z-10 ${
             isBot
               ? "bg-gray-800 border border-gray-700 text-gray-100 text-left"
               : "bg-indigo-600 border border-indigo-500 shadow-sm text-white text-left flex flex-col"
@@ -292,7 +292,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         >
           {/* Video Message */}
           {isVideoMessage ? (
-            <div className="relative">
+            <div className="relative z-10">
               <video
                 className="w-full rounded-lg shadow-lg"
                 controls
