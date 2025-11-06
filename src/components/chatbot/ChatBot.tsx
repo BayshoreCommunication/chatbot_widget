@@ -1108,7 +1108,19 @@ const ChatBot: React.FC<ChatBotProps> = ({
         {!embedded && (
           <motion.button
             className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
-            onClick={() => {
+            style={{ pointerEvents: "auto", cursor: "pointer" }}
+            onMouseEnter={() => console.log("🖱️ Mouse entered button")}
+            onMouseDown={(e) => {
+              console.log("🖱️ Mouse DOWN on button", e);
+              e.stopPropagation();
+            }}
+            onMouseUp={(e) => {
+              console.log("🖱️ Mouse UP on button", e);
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              console.log("🖱️ CHATBOT BUTTON CLICKED! Event:", e);
+              e.stopPropagation(); // Prevent parent from handling
               console.log("🖱️ CHATBOT BUTTON CLICKED! Current state:", {
                 isOpen,
                 historyFetched,
