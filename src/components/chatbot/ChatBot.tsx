@@ -59,31 +59,16 @@ const ChatBot: React.FC<ChatBotProps> = ({
   settings,
   welcomeApiBaseUrl,
 }) => {
-  console.log("🎬 ChatBot component rendering/re-rendering");
-
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Add effect to track messages changes
-  useEffect(() => {
-    console.log("📨 MESSAGES STATE CHANGED:", {
-      count: messages.length,
-      messages: messages,
-    });
-  }, [messages]);
-
   const [isOpen, setIsOpen] = useState<boolean>(() => {
-    const initial = Boolean(initiallyOpen);
-    console.log("🎯 Initial isOpen state:", initial);
-    return initial;
+    return Boolean(initiallyOpen);
   });
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPositioningScroll, setIsPositioningScroll] = useState(false);
   const [currentMode, setCurrentMode] = useState<BotMode>("initial");
-  const [historyFetched, setHistoryFetched] = useState(() => {
-    console.log("🎯 Initial historyFetched state: false");
-    return false;
-  });
+  const [historyFetched, setHistoryFetched] = useState(false);
   const [batchedMessages, setBatchedMessages] = useState<boolean>(false);
 
   const [showTooltip, setShowTooltip] = useState(false);
@@ -172,21 +157,16 @@ const ChatBot: React.FC<ChatBotProps> = ({
     const noTrailingSlash = cleaned.replace(/\/+$/, "");
     const noTrailingApi = noTrailingSlash.replace(/\/api$/, "");
     // Force HTTPS - critical for production to avoid mixed content errors
-    const httpsUrl = ensureHttps(noTrailingApi);
-    console.log("🔐 API Base URL:", httpsUrl);
-    return httpsUrl;
+    return ensureHttps(noTrailingApi);
   }, [ensureHttps]);
 
   const getDefaultWelcome = useCallback(() => {
-    // return "Hello! How can I help you today?";
     return "Hello. Welcome to Ai Assistant. How can I assist you today?";
   }, []);
 
   const fetchWelcomeMessage = useCallback(async () => {
     try {
       const url = "https://api.bayshorecommunication.org/api/instant-reply/";
-
-      console.log("🔍 [INSTANT-REPLY] Fetching from:", url);
 
       const response = await fetch(url, {
         headers: {
@@ -195,14 +175,11 @@ const ChatBot: React.FC<ChatBotProps> = ({
       });
 
       if (!response.ok) {
-        console.log("❌ [INSTANT-REPLY] API failed:", response.status);
         setWelcomeMessage(getDefaultWelcome());
         return;
       }
 
       const data = await response.json();
-      console.log("📥 [INSTANT-REPLY] Response:", data);
-
       const { isActive, messages } = data?.data || {};
 
       // Check if active and has messages
@@ -219,16 +196,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
         const firstMessage = sorted[0]?.message;
 
         if (firstMessage?.trim()) {
-          console.log("✅ [INSTANT-REPLY] Welcome message set:", firstMessage);
           setWelcomeMessage(firstMessage);
           return;
         }
       }
 
-      console.log("⚠️ [INSTANT-REPLY] No active message, using default");
       setWelcomeMessage(getDefaultWelcome());
     } catch (error) {
-      console.error("💥 [INSTANT-REPLY] Error:", error);
+      console.error("Error fetching welcome message:", error);
       setWelcomeMessage(getDefaultWelcome());
     }
   }, [apiKey, getDefaultWelcome]);
@@ -237,14 +212,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
     try {
       const base = ensureHttps(getNormalizedApiBase());
       const url = `${base}/api/chatbot/settings`;
-      console.log("🔍 Fetching organization settings from:", url);
       const response = await fetch(url, {
         headers: {
           "X-API-Key": apiKey || "org_sk_3ca4feb8c1afe80f73e1a40256d48e7c",
         },
       });
       if (!response.ok) {
-        console.log("❌ Settings API failed:", response.status);
         return;
       }
       const data = await response.json();
@@ -252,7 +225,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
         setServerSettings(data.settings as ChatbotSettings);
       }
     } catch (e) {
-      console.log("💥 Error fetching settings:", e);
+      console.error("Error fetching settings:", e);
     }
   }, [apiKey, getNormalizedApiBase, ensureHttps]);
 
@@ -364,14 +337,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   useEffect(() => {
     const autoOpenEnabled = settings?.auto_open_widget ?? settings?.auto_open;
-    console.log("🔄 Auto-open useEffect triggered:", {
-      autoOpenEnabled,
-      isOpen,
-    });
 
     if (autoOpenEnabled && !isOpen) {
-      console.log("✅ Auto-opening chat...");
-      // Open immediately when auto_open_widget is true
       setIsOpen(true);
     }
   }, [settings?.auto_open_widget, settings?.auto_open, isOpen]);
@@ -379,13 +346,8 @@ const ChatBot: React.FC<ChatBotProps> = ({
   // Listen for messages from parent window (widget wrapper)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      console.log("📨 Message received from parent:", event.data);
-
       // Handle openChat command from widget wrapper
       if (event.data === "openChat") {
-        console.log(
-          "✅ Received openChat command - opening chat and loading history..."
-        );
         setIsOpen(true);
       }
     };
@@ -408,16 +370,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   useEffect(() => {
     // Load history when chat opens and history hasn't been fetched yet
-    console.log("🔍 History useEffect triggered:", {
-      isOpen,
-      historyFetched,
-      sessionId,
-    });
-
     if (!isOpen) {
       // Reset history flag when chat closes so it reloads on next open
       if (historyFetched) {
-        console.log("🔄 Chat closed, resetting history flag");
         setHistoryFetched(false);
       }
       return;
@@ -425,45 +380,21 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
     // Check if we should skip loading (already fetched for this session)
     if (historyFetched) {
-      console.log("⏭️ History already fetched, skipping reload");
       return;
     }
 
-    console.log("🔄 Chat opened, loading history...", {
-      isOpen,
-      historyFetched,
-      sessionId,
-      apiKey: apiKey ? "present" : "missing",
-    });
-
     // Add delay to allow chat animation and instant replies to render first
     const delayTimer = setTimeout(() => {
-      console.log("⏰ Delay timer fired, starting history fetch...");
-
       const run = async () => {
-        console.log("🚀 Starting history fetch async function...");
-        // Always use in-memory sessionId to avoid race with localStorage
         setIsLoading(true);
-        console.log("⏳ Loading state set to true");
 
         try {
-          console.log(
-            "📡 Fetching conversation history for session:",
-            sessionId
-          );
-
           // Inline API call to avoid component dependencies
           const historyBase = ensureHttps(
             import.meta.env.VITE_API_CHATBOT_HISTORY_URL ||
               "https://api.bayshorecommunication.org/api/chatbot/history"
           );
           const historyUrl = `${historyBase}/${sessionId}`;
-
-          console.log("🔍 getConversationHistory called:", {
-            sessionId,
-            url: historyUrl,
-            apiKey,
-          });
 
           const response = await fetch(historyUrl, {
             method: "GET",
@@ -473,29 +404,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
             },
           });
 
-          console.log(
-            "📡 History API response status:",
-            response.status,
-            response.statusText
-          );
-
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error("❌ History API error response:", errorText);
-            throw new Error(`API error: ${response.status} - ${errorText}`);
+            throw new Error(`API error: ${response.status}`);
           }
 
           const data = await response.json();
-          console.log("📦 History API response data:", data);
 
           // Use the fetched data as response
           if (data.user_data && data.user_data.conversation_history) {
-            console.log(
-              "✅ Found conversation history:",
-              data.user_data.conversation_history.length,
-              "messages"
-            );
-
             if (data.user_data.agent_mode || data.agent_mode)
               setIsAgentMode(true);
 
@@ -508,61 +424,43 @@ const ChatBot: React.FC<ChatBotProps> = ({
             const historyMessages = convertToMessages(
               data.user_data.conversation_history
             );
-            console.log(
-              "🔄 Converted history messages:",
-              historyMessages.length,
-              historyMessages
-            );
 
             // Hide instant replies before showing history
-            console.log("🚫 Hiding instant replies...");
             setShowInstantReplies(false);
 
             // Set messages immediately for faster loading
-            console.log(
-              "💾 Setting messages state with history:",
-              historyMessages.length,
-              "messages"
-            );
             setMessages(historyMessages);
-            console.log("✅ setMessages() called with history");
 
             if (data.mode) setCurrentMode(data.mode as BotMode);
 
             // Set batch loading flag for optimized rendering
-            console.log("📦 Setting batch loading flags...");
             setBatchedMessages(true);
             setIsPositioningScroll(true);
 
             // Mark history as fetched immediately after setting messages
-            console.log("✅ Marking history as fetched...");
             setHistoryFetched(true);
-            console.log("✅ setHistoryFetched(true) called");
 
             // Quick scroll and cleanup after minimal delay
             setTimeout(() => {
-              console.log("⏰ Cleanup timeout fired...");
               forceScrollToBottom();
               setIsLoading(false);
               setIsPositioningScroll(false);
-              console.log("✅ History loading complete - all flags reset");
-            }, 100); // Reduced from 900ms to 100ms
+            }, 100);
           } else {
-            console.log("⚠️ No conversation history found in response");
             setIsLoading(false);
             setIsTyping(false);
-            setHistoryFetched(true); // Mark as fetched even if no history
+            setHistoryFetched(true);
           }
         } catch (error) {
-          console.error("❌ Error loading conversation history:", error);
+          console.error("Error loading conversation history:", error);
           setIsLoading(false);
           setIsTyping(false);
-          setHistoryFetched(true); // Mark as fetched even on error to prevent retry loops
+          setHistoryFetched(true);
         }
       };
 
       run();
-    }, 300); // Wait 300ms for chat animation and instant replies to render
+    }, 300);
 
     return () => clearTimeout(delayTimer);
   }, [
@@ -619,10 +517,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
     const socketUrl = ensureHttps(
       import.meta.env.VITE_SOCKET_URL || "https://api.bayshorecommunication.org"
     );
-    console.log("🔌 Connecting to Socket.IO at:", socketUrl);
 
     const socketInstance = io(socketUrl, {
-      transports: ["polling", "websocket"], // Try polling first, then websocket
+      transports: ["polling", "websocket"],
       timeout: 15000,
       reconnection: true,
       reconnectionAttempts: 3,
@@ -638,32 +535,14 @@ const ChatBot: React.FC<ChatBotProps> = ({
     socketRef.current = socketInstance;
 
     socketInstance.on("connect", () => {
-      console.log("✅ Socket.IO connected successfully");
       socketInstance.emit("join_room", { room: apiKey });
     });
 
     socketInstance.on("connect_error", (error) => {
-      console.error("❌ Socket.IO connection error:", error);
-    });
-
-    socketInstance.on("disconnect", (reason) => {
-      console.log("🔌 Socket.IO disconnected:", reason);
-    });
-
-    socketInstance.on("reconnect", (attemptNumber) => {
-      console.log("🔄 Socket.IO reconnected after", attemptNumber, "attempts");
-    });
-
-    socketInstance.on("reconnect_error", (error) => {
-      console.error("❌ Socket.IO reconnection error:", error);
-    });
-
-    socketInstance.on("connection_confirmed", (data) => {
-      console.log("✅ Socket.IO connection confirmed:", data);
+      console.error("Socket.IO connection error:", error);
     });
 
     socketInstance.on("agent_takeover", (data) => {
-      console.log("👤 Agent takeover event received:", data);
       if (data.session_id === sessionId) {
         setIsAgentMode(true);
         setAgentId(data.agent_id || null);
@@ -678,7 +557,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
     });
 
     socketInstance.on("agent_release", (data) => {
-      console.log("🤖 Agent release event received:", data);
       if (data.session_id === sessionId) {
         setIsAgentMode(false);
         setAgentId(null);
@@ -693,7 +571,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
     });
 
     socketInstance.on("new_message", (data) => {
-      console.log("📨 New message event received:", data);
       if (
         data.session_id === sessionId &&
         data.message.role === "assistant" &&
@@ -711,7 +588,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
     });
 
     return () => {
-      console.log("🔌 Cleaning up Socket.IO connection");
       socketInstance.disconnect();
     };
   }, [apiKey, sessionId, ensureHttps]);
@@ -724,18 +600,10 @@ const ChatBot: React.FC<ChatBotProps> = ({
   };
 
   useEffect(() => {
-    console.log(
-      "🎯 useEffect triggered - apiKey:",
-      apiKey,
-      "welcomeApiBaseUrl:",
-      welcomeApiBaseUrl
-    );
     if (apiKey) {
-      console.log("✅ Calling fetchWelcomeMessage with apiKey:", apiKey);
       fetchWelcomeMessage();
       fetchSettings();
     } else {
-      console.log("❌ No apiKey provided, using fallback");
       fetchWelcomeMessage();
     }
   }, [apiKey, welcomeApiBaseUrl, fetchWelcomeMessage, fetchSettings]);
@@ -752,40 +620,27 @@ const ChatBot: React.FC<ChatBotProps> = ({
       serverSettings?.sound_notifications || settings?.sound_notifications;
 
     if (!soundSettings) {
-      console.log("🔊 Waiting for sound settings to load...");
       return;
     }
 
     // Play welcome sound if enabled (regardless of chat open/closed)
     if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
-      console.log("🔊 Playing welcome sound on widget load...");
-      console.log("🔊 Sound settings:", soundSettings);
-      welcomeSoundPlayedRef.current = true; // Mark as played
+      welcomeSoundPlayedRef.current = true;
 
       // Delay 2-3 seconds after widget loads
       const timer = setTimeout(() => {
         try {
           playWelcomeSound();
-          console.log("🔊 Welcome sound played successfully");
         } catch (error) {
-          console.log(
-            "🔊 Welcome sound autoplay prevented (user interaction required):",
-            error
-          );
           // Don't mark as failed, browser might block autoplay
-          welcomeSoundPlayedRef.current = false; // Allow retry on user interaction
+          welcomeSoundPlayedRef.current = false;
         }
-      }, 2500); // 2.5 seconds delay
+      }, 2500);
 
       return () => clearTimeout(timer);
-    } else {
-      console.log("🔊 Welcome sound disabled in settings:", {
-        enabled: soundSettings?.enabled,
-        welcomeEnabled: soundSettings?.welcome_sound?.enabled,
-      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverSettings?.sound_notifications, settings?.sound_notifications]); // React to sound settings loading
+  }, [serverSettings?.sound_notifications, settings?.sound_notifications]);
 
   // Fallback: Play welcome sound when chat opens if it failed on page load
   useEffect(() => {
@@ -804,18 +659,16 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
     // Play welcome sound if enabled (fallback for autoplay block)
     if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
-      console.log("🔊 Playing welcome sound on chat open (fallback)...");
-      welcomeSoundPlayedRef.current = true; // Mark as played
+      welcomeSoundPlayedRef.current = true;
 
       // Small delay to ensure the chat animation starts
       const timer = setTimeout(() => {
         try {
           playWelcomeSound();
-          console.log("🔊 Welcome sound played successfully");
         } catch (error) {
-          console.error("🔊 Error playing welcome sound:", error);
+          console.error("Error playing welcome sound:", error);
         }
-      }, 300); // Shorter delay since we have user gesture
+      }, 300);
 
       return () => clearTimeout(timer);
     }
@@ -824,7 +677,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
     isOpen,
     serverSettings?.sound_notifications,
     settings?.sound_notifications,
-  ]); // React to chat opening and sound settings
+  ]);
 
   const fetchInstantReplies = useCallback(async () => {
     try {
@@ -885,7 +738,6 @@ const ChatBot: React.FC<ChatBotProps> = ({
       soundSettings?.message_sound?.enabled &&
       soundSettings?.message_sound?.play_on_send
     ) {
-      console.log("🔊 Playing message send sound...");
       playMessageSound();
 
       // Notify parent widget if embedded
@@ -1041,11 +893,7 @@ const ChatBot: React.FC<ChatBotProps> = ({
   ]);
 
   const resolvedWelcomeText = useMemo(() => {
-    const result =
-      (welcomeMessage && welcomeMessage.trim()) || getDefaultWelcome();
-    console.log("🎯 Welcome message state:", welcomeMessage);
-    console.log("🎯 Resolved welcome text:", result);
-    return result;
+    return (welcomeMessage && welcomeMessage.trim()) || getDefaultWelcome();
   }, [welcomeMessage, getDefaultWelcome]);
 
   const inlineWelcomeMessage: Message = useMemo(
@@ -1059,29 +907,16 @@ const ChatBot: React.FC<ChatBotProps> = ({
   );
 
   const displayMessages: Message[] = useMemo(() => {
-    console.log("🎨 displayMessages useMemo recalculating...", {
-      messagesLength: messages.length,
-      hasIntroVideo: !!introVideoMessage,
-    });
-
     // If we have conversation history (messages length > 0), don't show welcome/intro
     // Only show welcome message for brand new conversations
     if (messages.length > 0) {
-      console.log(
-        "📝 Showing history messages (no welcome):",
-        messages.length,
-        messages
-      );
       return messages;
     }
 
     // For new conversations, show intro video + welcome message
-    console.log("👋 Showing welcome message (new conversation)");
-    const result = introVideoMessage
+    return introVideoMessage
       ? [introVideoMessage, inlineWelcomeMessage]
       : [inlineWelcomeMessage];
-    console.log("👋 Welcome messages to display:", result);
-    return result;
   }, [introVideoMessage, inlineWelcomeMessage, messages]);
 
   return (
@@ -1123,82 +958,54 @@ const ChatBot: React.FC<ChatBotProps> = ({
           </AnimatePresence>
         )}
 
-        {!embedded &&
-          (() => {
-            console.log("🎯 BUTTON RENDER CHECK:", {
-              embedded,
-              shouldRender: !embedded,
-            });
-            return (
-              <motion.button
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
-                style={{
-                  pointerEvents: "auto",
-                  cursor: "pointer",
-                  zIndex: 9999,
-                }}
-                onMouseEnter={() => console.log("🖱️ Mouse entered button")}
-                onMouseDown={(e) => {
-                  console.log("🖱️ Mouse DOWN on button", e);
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  console.log("🖱️ Mouse UP on button", e);
-                  e.stopPropagation();
-                }}
-                onClick={(e) => {
-                  console.log("🖱️ CHATBOT BUTTON CLICKED! Event:", e);
-                  e.stopPropagation(); // Prevent parent from handling
-                  console.log("🖱️ CHATBOT BUTTON CLICKED! Current state:", {
-                    isOpen,
-                    historyFetched,
-                    messagesCount: messages.length,
-                  });
-
-                  setShowTooltip(false);
-                  if (!isOpen) {
-                    console.log("✅ Opening chat (was closed)...");
-                    // Open chat immediately - history will load via useEffect
-                    setIsOpen(true);
-                    console.log("✅ setIsOpen(true) called");
-                    setTimeout(() => forceScrollToBottom(), 800);
-                  } else {
-                    console.log("❌ Closing chat (was open)...");
-                    setIsOpen(false);
-                    console.log("❌ setIsOpen(false) called");
-                  }
-                  if (tooltipTimeoutRef.current)
-                    clearTimeout(tooltipTimeoutRef.current);
-                  onToggleChat?.();
-                }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+        {!embedded && (
+          <motion.button
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
+            style={{
+              pointerEvents: "auto",
+              cursor: "pointer",
+              zIndex: 9999,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowTooltip(false);
+              if (!isOpen) {
+                setIsOpen(true);
+                setTimeout(() => forceScrollToBottom(), 800);
+              } else {
+                setIsOpen(false);
+              }
+              if (tooltipTimeoutRef.current)
+                clearTimeout(tooltipTimeoutRef.current);
+              onToggleChat?.();
+            }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            {settings?.avatarUrl ? (
+              <img
+                src={settings.avatarUrl}
+                alt="Assistant"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 sm:h-8 sm:w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                {settings?.avatarUrl ? (
-                  <img
-                    src={settings.avatarUrl}
-                    alt="Assistant"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 sm:h-8 sm:w-8"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                    />
-                  </svg>
-                )}
-              </motion.button>
-            );
-          })()}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
+              </svg>
+            )}
+          </motion.button>
+        )}
 
         <AnimatePresence>
           {(isOpen || embedded) && (

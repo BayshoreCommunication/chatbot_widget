@@ -719,14 +719,10 @@
           }
         }, 300);
         isOpen = true;
-        console.log("\u{1F4E8} Sending 'openChat' message to iframe...");
         (_a2 = iframe.contentWindow) == null ? void 0 : _a2.postMessage("openChat", "*");
         if (!hasPlayedWelcomeSound) {
           const soundSettings = (_b2 = widgetConfig.settings) == null ? void 0 : _b2.sound_notifications;
           if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_c2 = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _c2.enabled)) {
-            console.log(
-              "\u{1F50A} Playing welcome sound on chat open (FALLBACK - browser blocked page load sound)..."
-            );
             setTimeout(() => {
               playWelcomeSound();
             }, 300);
@@ -817,7 +813,6 @@
             const messages = data.data.messages || [];
             if (messages.length > 0) {
               let showMessagesLoop = function() {
-                console.log("\u{1F504} Showing all instant reply messages...");
                 showAllInstantReplies(sortedMessages);
                 const loopTimeout = setTimeout(() => {
                   if (!isOpen) {
@@ -831,13 +826,9 @@
               showMessagesLoop();
             }
           } else {
-            console.log("\u274C Instant replies not active or no messages available");
           }
         } catch (error) {
-          console.error(
-            "\u{1F4A5} Error fetching instant replies:",
-            (error == null ? void 0 : error.message) || error
-          );
+          console.error("Error fetching instant replies:", (error == null ? void 0 : error.message) || error);
         }
       }
       window.addEventListener("message", (event) => {
@@ -858,15 +849,9 @@
       });
       let isOpen = false;
       toggleButton.addEventListener("click", () => {
-        console.log("\u{1F5B1}\uFE0F WIDGET WRAPPER BUTTON CLICKED!", {
-          isOpen,
-          willOpen: !isOpen
-        });
         if (isOpen) {
-          console.log("\u274C Closing widget wrapper...");
           closeWidget();
         } else {
-          console.log("\u2705 Opening widget wrapper...");
           openWidget();
         }
       });

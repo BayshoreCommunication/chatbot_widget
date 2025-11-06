@@ -868,27 +868,16 @@
 
       isOpen = true;
 
-      // ═══════════════════════════════════════════════════════════════
-      // CRITICAL: Send message to iframe to open chat and load history
-      // This ensures history loads when user manually clicks the button
-      // ═══════════════════════════════════════════════════════════════
-      console.log("📨 Sending 'openChat' message to iframe...");
+      // Send message to iframe to open chat and load history
       iframe.contentWindow?.postMessage("openChat", "*");
 
-      // ═══════════════════════════════════════════════════════════════
-      // FALLBACK: Play welcome sound ONLY if browser blocked it on page load
-      // This is NOT the primary trigger - primary is in init() function
-      // This only runs if autoplay policy prevented the page load sound
-      // ═══════════════════════════════════════════════════════════════
+      // Fallback: Play welcome sound ONLY if browser blocked it on page load
       if (!hasPlayedWelcomeSound) {
         const soundSettings = widgetConfig.settings?.sound_notifications;
         if (soundSettings?.enabled && soundSettings?.welcome_sound?.enabled) {
-          console.log(
-            "🔊 Playing welcome sound on chat open (FALLBACK - browser blocked page load sound)..."
-          );
           setTimeout(() => {
             playWelcomeSound();
-          }, 300); // Short delay for smooth UX
+          }, 300);
         }
       }
 
@@ -919,7 +908,7 @@
             // Add to container
             instantReplyContainer.appendChild(popup);
           }
-        }, index * 100); // Stagger by 100ms for smooth appearance
+        }, index * 100);
 
         instantReplyTimeouts.push(timeout);
       });
@@ -1025,12 +1014,10 @@
 
             // Function to show all messages at once, then loop
             function showMessagesLoop() {
-              console.log("🔄 Showing all instant reply messages...");
-
               // Show all messages at once (stacked)
               showAllInstantReplies(sortedMessages);
 
-              // Schedule next loop after 15 seconds (10s display + 5s pause)
+              // Schedule next loop after 15 seconds
               const loopTimeout = setTimeout(() => {
                 if (!isOpen) {
                   showMessagesLoop();
@@ -1044,14 +1031,13 @@
             showMessagesLoop();
           }
         } else {
-          console.log("❌ Instant replies not active or no messages available");
+          // Instant replies not active
         }
       } catch (error) {
         console.error(
-          "💥 Error fetching instant replies:",
+          "Error fetching instant replies:",
           error?.message || error
         );
-        // Don't throw error - just log it and continue
       }
     }
 
@@ -1086,16 +1072,9 @@
     // Toggle widget visibility when button is clicked
     let isOpen = false;
     toggleButton.addEventListener("click", () => {
-      console.log("🖱️ WIDGET WRAPPER BUTTON CLICKED!", {
-        isOpen,
-        willOpen: !isOpen,
-      });
-
       if (isOpen) {
-        console.log("❌ Closing widget wrapper...");
         closeWidget();
       } else {
-        console.log("✅ Opening widget wrapper...");
         openWidget();
       }
     });
