@@ -356,11 +356,18 @@ const ChatBot: React.FC<ChatBotProps> = ({
     // Load history when chat opens and history hasn't been fetched yet
     if (!isOpen) {
       // Reset history flag when chat closes so it reloads on next open
-      if (historyFetched) setHistoryFetched(false);
+      if (historyFetched) {
+        console.log("🔄 Chat closed, resetting history flag");
+        setHistoryFetched(false);
+      }
       return;
     }
 
-    if (historyFetched) return;
+    // Check if we should skip loading (already fetched for this session)
+    if (historyFetched) {
+      console.log("⏭️ History already fetched, skipping reload");
+      return;
+    }
 
     console.log("🔄 Chat opened, loading history...", {
       isOpen,
@@ -451,6 +458,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
             setBatchedMessages(true);
             setIsPositioningScroll(true);
 
+            // Mark history as fetched immediately after setting messages
+            setHistoryFetched(true);
+
             // Quick scroll and cleanup after minimal delay
             setTimeout(() => {
               forceScrollToBottom();
@@ -462,13 +472,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
             console.log("⚠️ No conversation history found in response");
             setIsLoading(false);
             setIsTyping(false);
+            setHistoryFetched(true); // Mark as fetched even if no history
           }
         } catch (error) {
           console.error("❌ Error loading conversation history:", error);
           setIsLoading(false);
           setIsTyping(false);
-        } finally {
-          setHistoryFetched(true);
+          setHistoryFetched(true); // Mark as fetched even on error to prevent retry loops
         }
       };
 
