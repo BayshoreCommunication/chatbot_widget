@@ -59,13 +59,31 @@ const ChatBot: React.FC<ChatBotProps> = ({
   settings,
   welcomeApiBaseUrl,
 }) => {
+  console.log("🎬 ChatBot component rendering/re-rendering");
+
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isOpen, setIsOpen] = useState<boolean>(() => Boolean(initiallyOpen));
+
+  // Add effect to track messages changes
+  useEffect(() => {
+    console.log("📨 MESSAGES STATE CHANGED:", {
+      count: messages.length,
+      messages: messages,
+    });
+  }, [messages]);
+
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    const initial = Boolean(initiallyOpen);
+    console.log("🎯 Initial isOpen state:", initial);
+    return initial;
+  });
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPositioningScroll, setIsPositioningScroll] = useState(false);
   const [currentMode, setCurrentMode] = useState<BotMode>("initial");
-  const [historyFetched, setHistoryFetched] = useState(false);
+  const [historyFetched, setHistoryFetched] = useState(() => {
+    console.log("🎯 Initial historyFetched state: false");
+    return false;
+  });
   const [batchedMessages, setBatchedMessages] = useState<boolean>(false);
 
   const [showTooltip, setShowTooltip] = useState(false);
@@ -346,7 +364,13 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   useEffect(() => {
     const autoOpenEnabled = settings?.auto_open_widget ?? settings?.auto_open;
+    console.log("🔄 Auto-open useEffect triggered:", {
+      autoOpenEnabled,
+      isOpen,
+    });
+
     if (autoOpenEnabled && !isOpen) {
+      console.log("✅ Auto-opening chat...");
       // Open immediately when auto_open_widget is true
       setIsOpen(true);
     }
@@ -468,29 +492,42 @@ const ChatBot: React.FC<ChatBotProps> = ({
             );
             console.log(
               "🔄 Converted history messages:",
-              historyMessages.length
+              historyMessages.length,
+              historyMessages
             );
 
             // Hide instant replies before showing history
+            console.log("🚫 Hiding instant replies...");
             setShowInstantReplies(false);
 
             // Set messages immediately for faster loading
+            console.log(
+              "💾 Setting messages state with history:",
+              historyMessages.length,
+              "messages"
+            );
             setMessages(historyMessages);
+            console.log("✅ setMessages() called with history");
+
             if (data.mode) setCurrentMode(data.mode as BotMode);
 
             // Set batch loading flag for optimized rendering
+            console.log("📦 Setting batch loading flags...");
             setBatchedMessages(true);
             setIsPositioningScroll(true);
 
             // Mark history as fetched immediately after setting messages
+            console.log("✅ Marking history as fetched...");
             setHistoryFetched(true);
+            console.log("✅ setHistoryFetched(true) called");
 
             // Quick scroll and cleanup after minimal delay
             setTimeout(() => {
+              console.log("⏰ Cleanup timeout fired...");
               forceScrollToBottom();
               setIsLoading(false);
               setIsPositioningScroll(false);
-              console.log("✅ History loading complete");
+              console.log("✅ History loading complete - all flags reset");
             }, 100); // Reduced from 900ms to 100ms
           } else {
             console.log("⚠️ No conversation history found in response");
@@ -1004,18 +1041,29 @@ const ChatBot: React.FC<ChatBotProps> = ({
   );
 
   const displayMessages: Message[] = useMemo(() => {
+    console.log("🎨 displayMessages useMemo recalculating...", {
+      messagesLength: messages.length,
+      hasIntroVideo: !!introVideoMessage,
+    });
+
     // If we have conversation history (messages length > 0), don't show welcome/intro
     // Only show welcome message for brand new conversations
     if (messages.length > 0) {
-      console.log("📝 Showing history messages (no welcome):", messages.length);
+      console.log(
+        "📝 Showing history messages (no welcome):",
+        messages.length,
+        messages
+      );
       return messages;
     }
 
     // For new conversations, show intro video + welcome message
     console.log("👋 Showing welcome message (new conversation)");
-    return introVideoMessage
+    const result = introVideoMessage
       ? [introVideoMessage, inlineWelcomeMessage]
       : [inlineWelcomeMessage];
+    console.log("👋 Welcome messages to display:", result);
+    return result;
   }, [introVideoMessage, inlineWelcomeMessage, messages]);
 
   return (
@@ -1061,13 +1109,23 @@ const ChatBot: React.FC<ChatBotProps> = ({
           <motion.button
             className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-700 text-white flex items-center justify-center shadow-lg hover:bg-indigo-800 transition-colors overflow-hidden"
             onClick={() => {
+              console.log("🖱️ CHATBOT BUTTON CLICKED! Current state:", {
+                isOpen,
+                historyFetched,
+                messagesCount: messages.length,
+              });
+
               setShowTooltip(false);
               if (!isOpen) {
+                console.log("✅ Opening chat (was closed)...");
                 // Open chat immediately - history will load via useEffect
                 setIsOpen(true);
+                console.log("✅ setIsOpen(true) called");
                 setTimeout(() => forceScrollToBottom(), 800);
               } else {
+                console.log("❌ Closing chat (was open)...");
                 setIsOpen(false);
+                console.log("❌ setIsOpen(false) called");
               }
               if (tooltipTimeoutRef.current)
                 clearTimeout(tooltipTimeoutRef.current);
