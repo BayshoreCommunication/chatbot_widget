@@ -176,27 +176,36 @@
       }
     };
     function parseConfig() {
-      const scripts = document.getElementsByTagName("script");
-      const currentScript = scripts[scripts.length - 1];
-      if (currentScript.getAttribute("data-api-key")) {
+      let currentScript = document.currentScript;
+      if (!currentScript) {
+        const scripts = Array.from(document.getElementsByTagName("script"));
+        currentScript = scripts.find(
+          (s) => s.src && (s.src.includes("chatbot-widget.min.js") || s.src.includes("chatbot-widget.js"))
+        );
+      }
+      if (!currentScript) {
+        const scripts = document.getElementsByTagName("script");
+        currentScript = scripts[scripts.length - 1];
+      }
+      if (currentScript && currentScript.getAttribute("data-api-key")) {
         widgetConfig.apiKey = currentScript.getAttribute("data-api-key") || "";
       }
-      if (currentScript.getAttribute("data-fallback-api-key")) {
+      if (currentScript && currentScript.getAttribute("data-fallback-api-key")) {
         widgetConfig.fallbackApiKey = currentScript.getAttribute("data-fallback-api-key") || "";
       }
-      if (currentScript.getAttribute("data-widget-name")) {
+      if (currentScript && currentScript.getAttribute("data-widget-name")) {
         widgetConfig.widgetName = currentScript.getAttribute("data-widget-name") || "AI Assistant";
       }
-      if (currentScript.getAttribute("data-widget-color")) {
+      if (currentScript && currentScript.getAttribute("data-widget-color")) {
         widgetConfig.widgetColor = currentScript.getAttribute("data-widget-color") || "blue";
       }
-      if (currentScript.getAttribute("data-auto-open")) {
+      if (currentScript && currentScript.getAttribute("data-auto-open")) {
         widgetConfig.autoOpen = currentScript.getAttribute("data-auto-open") === "true";
       }
-      if (currentScript.getAttribute("data-lead-capture")) {
+      if (currentScript && currentScript.getAttribute("data-lead-capture")) {
         widgetConfig.leadCapture = currentScript.getAttribute("data-lead-capture") === "true";
       }
-      if (currentScript.getAttribute("data-position")) {
+      if (currentScript && currentScript.getAttribute("data-position")) {
         widgetConfig.position = currentScript.getAttribute("data-position") || "bottom-right";
       }
       if (!widgetConfig.apiKey) {
@@ -828,7 +837,10 @@
           } else {
           }
         } catch (error) {
-          console.error("Error fetching instant replies:", (error == null ? void 0 : error.message) || error);
+          console.error(
+            "Error fetching instant replies:",
+            (error == null ? void 0 : error.message) || error
+          );
         }
       }
       window.addEventListener("message", (event) => {

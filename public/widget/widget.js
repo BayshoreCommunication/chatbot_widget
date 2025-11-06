@@ -225,46 +225,63 @@
   // Parse script attributes or URL parameters
   function parseConfig() {
     // Get the script tag that loaded this widget
-    const scripts = document.getElementsByTagName("script");
-    const currentScript = scripts[scripts.length - 1];
+    // Try document.currentScript first (works during execution)
+    let currentScript = document.currentScript;
+
+    // Fallback: Find script by src URL if currentScript is not available
+    if (!currentScript) {
+      const scripts = Array.from(document.getElementsByTagName("script"));
+      currentScript = scripts.find(
+        (s) =>
+          s.src &&
+          (s.src.includes("chatbot-widget.min.js") ||
+            s.src.includes("chatbot-widget.js"))
+      );
+    }
+
+    // Final fallback: last script tag
+    if (!currentScript) {
+      const scripts = document.getElementsByTagName("script");
+      currentScript = scripts[scripts.length - 1];
+    }
 
     // Extract API key from data attribute
-    if (currentScript.getAttribute("data-api-key")) {
+    if (currentScript && currentScript.getAttribute("data-api-key")) {
       widgetConfig.apiKey = currentScript.getAttribute("data-api-key") || "";
     }
 
     // Extract fallback API key
-    if (currentScript.getAttribute("data-fallback-api-key")) {
+    if (currentScript && currentScript.getAttribute("data-fallback-api-key")) {
       widgetConfig.fallbackApiKey =
         currentScript.getAttribute("data-fallback-api-key") || "";
     }
 
     // Extract widget name
-    if (currentScript.getAttribute("data-widget-name")) {
+    if (currentScript && currentScript.getAttribute("data-widget-name")) {
       widgetConfig.widgetName =
         currentScript.getAttribute("data-widget-name") || "AI Assistant";
     }
 
     // Extract widget color
-    if (currentScript.getAttribute("data-widget-color")) {
+    if (currentScript && currentScript.getAttribute("data-widget-color")) {
       widgetConfig.widgetColor =
         currentScript.getAttribute("data-widget-color") || "blue";
     }
 
     // Extract auto-open setting
-    if (currentScript.getAttribute("data-auto-open")) {
+    if (currentScript && currentScript.getAttribute("data-auto-open")) {
       widgetConfig.autoOpen =
         currentScript.getAttribute("data-auto-open") === "true";
     }
 
     // Extract lead capture setting
-    if (currentScript.getAttribute("data-lead-capture")) {
+    if (currentScript && currentScript.getAttribute("data-lead-capture")) {
       widgetConfig.leadCapture =
         currentScript.getAttribute("data-lead-capture") === "true";
     }
 
     // Extract position if specified
-    if (currentScript.getAttribute("data-position")) {
+    if (currentScript && currentScript.getAttribute("data-position")) {
       widgetConfig.position =
         currentScript.getAttribute("data-position") || "bottom-right";
     }
