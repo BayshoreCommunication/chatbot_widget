@@ -3,18 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import ChatBot from "../components/chatbot/ChatBot";
 import type { ChatbotSettings } from "../components/chatbot/types";
 
-// Helper function to check if auto_open is enabled
-const isAutoOpenEnabled = (settings: ChatbotSettings | null): boolean => {
-  if (!settings) return false;
-
-  const autoOpen = settings.auto_open;
-  if (typeof autoOpen === "boolean") return autoOpen;
-  if (typeof autoOpen === "string") return autoOpen.toLowerCase() === "true";
-  if (typeof autoOpen === "number") return autoOpen === 1;
-
-  return false;
-};
-
 const ChatbotEmbedPage = () => {
   const [apiKey, setApiKey] = useState<string | undefined>(undefined);
   const [isWidget, setIsWidget] = useState<boolean>(false);
@@ -29,35 +17,38 @@ const ChatbotEmbedPage = () => {
   }, []);
 
   // Fetch chatbot settings
-  const fetchSettings = useCallback(async (apiKey: string) => {
-    try {
-      const apiUrl = ensureHttps(
-        import.meta.env.VITE_API_CHATBOT_SETTINGS_URL ||
-          "https://api.bayshorecommunication.org/api/chatbot/settings"
-      );
-      console.log("🔐 Fetching settings from:", apiUrl);
-      const response = await fetch(apiUrl, {
-        method: "GET",
-        headers: {
-          "X-API-Key": apiKey,
-          "Content-Type": "application/json",
-        },
-      });
+  const fetchSettings = useCallback(
+    async (apiKey: string) => {
+      try {
+        const apiUrl = ensureHttps(
+          import.meta.env.VITE_API_CHATBOT_SETTINGS_URL ||
+            "https://api.bayshorecommunication.org/api/chatbot/settings"
+        );
+        console.log("🔐 Fetching settings from:", apiUrl);
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            "X-API-Key": apiKey,
+            "Content-Type": "application/json",
+          },
+        });
 
-      const data = await response.json();
-      console.log("Settings response:", data);
-      if (data.status === "success") {
-        setSettings(data.settings);
-        console.log("Settings loaded successfully:", data.settings);
-      } else {
-        console.error("Failed to load settings:", data);
+        const data = await response.json();
+        console.log("Settings response:", data);
+        if (data.status === "success") {
+          setSettings(data.settings);
+          console.log("Settings loaded successfully:", data.settings);
+        } else {
+          console.error("Failed to load settings:", data);
+          setError("Failed to load chatbot settings");
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
         setError("Failed to load chatbot settings");
       }
-    } catch (error) {
-      console.error("Error fetching settings:", error);
-      setError("Failed to load chatbot settings");
-    }
-  }, []);
+    },
+    [ensureHttps]
+  );
 
   // Callback function for close button click
   const handleToggleChat = useCallback(() => {
@@ -108,7 +99,7 @@ const ChatbotEmbedPage = () => {
             <ChatBot
               apiKey={apiKey}
               embedded={true}
-              initiallyOpen={isAutoOpenEnabled(settings)}
+              initiallyOpen={false}
               onToggleChat={handleToggleChat}
               settings={settings}
             />

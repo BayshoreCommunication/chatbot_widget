@@ -869,6 +869,13 @@
       isOpen = true;
 
       // ═══════════════════════════════════════════════════════════════
+      // CRITICAL: Send message to iframe to open chat and load history
+      // This ensures history loads when user manually clicks the button
+      // ═══════════════════════════════════════════════════════════════
+      console.log("📨 Sending 'openChat' message to iframe...");
+      iframe.contentWindow?.postMessage("openChat", "*");
+
+      // ═══════════════════════════════════════════════════════════════
       // FALLBACK: Play welcome sound ONLY if browser blocked it on page load
       // This is NOT the primary trigger - primary is in init() function
       // This only runs if autoplay policy prevented the page load sound
@@ -1079,9 +1086,16 @@
     // Toggle widget visibility when button is clicked
     let isOpen = false;
     toggleButton.addEventListener("click", () => {
+      console.log("🖱️ WIDGET WRAPPER BUTTON CLICKED!", {
+        isOpen,
+        willOpen: !isOpen,
+      });
+
       if (isOpen) {
+        console.log("❌ Closing widget wrapper...");
         closeWidget();
       } else {
+        console.log("✅ Opening widget wrapper...");
         openWidget();
       }
     });

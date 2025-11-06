@@ -376,6 +376,24 @@ const ChatBot: React.FC<ChatBotProps> = ({
     }
   }, [settings?.auto_open_widget, settings?.auto_open, isOpen]);
 
+  // Listen for messages from parent window (widget wrapper)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      console.log("📨 Message received from parent:", event.data);
+
+      // Handle openChat command from widget wrapper
+      if (event.data === "openChat") {
+        console.log(
+          "✅ Received openChat command - opening chat and loading history..."
+        );
+        setIsOpen(true);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   // Helper function to convert conversation history to messages
   const convertToMessages = useCallback(
     (history: ConversationMessage[]): Message[] =>

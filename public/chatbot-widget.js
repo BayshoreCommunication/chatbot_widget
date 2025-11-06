@@ -707,7 +707,7 @@
         }
       }
       function openWidget() {
-        var _a2, _b2;
+        var _a2, _b2, _c2;
         toggleButton.classList.add("hidden");
         toggleButton.classList.remove("animate-pulse-theme");
         widgetContainer.classList.remove("hidden");
@@ -719,9 +719,11 @@
           }
         }, 300);
         isOpen = true;
+        console.log("\u{1F4E8} Sending 'openChat' message to iframe...");
+        (_a2 = iframe.contentWindow) == null ? void 0 : _a2.postMessage("openChat", "*");
         if (!hasPlayedWelcomeSound) {
-          const soundSettings = (_a2 = widgetConfig.settings) == null ? void 0 : _a2.sound_notifications;
-          if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_b2 = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _b2.enabled)) {
+          const soundSettings = (_b2 = widgetConfig.settings) == null ? void 0 : _b2.sound_notifications;
+          if ((soundSettings == null ? void 0 : soundSettings.enabled) && ((_c2 = soundSettings == null ? void 0 : soundSettings.welcome_sound) == null ? void 0 : _c2.enabled)) {
             console.log(
               "\u{1F50A} Playing welcome sound on chat open (FALLBACK - browser blocked page load sound)..."
             );
@@ -856,9 +858,15 @@
       });
       let isOpen = false;
       toggleButton.addEventListener("click", () => {
+        console.log("\u{1F5B1}\uFE0F WIDGET WRAPPER BUTTON CLICKED!", {
+          isOpen,
+          willOpen: !isOpen
+        });
         if (isOpen) {
+          console.log("\u274C Closing widget wrapper...");
           closeWidget();
         } else {
+          console.log("\u2705 Opening widget wrapper...");
           openWidget();
         }
       });
