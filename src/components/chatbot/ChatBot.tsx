@@ -715,42 +715,36 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   useEffect(() => {
     if (isOpen && apiKey) {
-      // Fetch instant replies when chat opens
-      fetchInstantReplies().then(() => {});
+      // Fetch instant replies when chat opens - DISABLED
+      // fetchInstantReplies().then(() => {});
     }
   }, [isOpen, apiKey, fetchInstantReplies]);
 
-  // Instant reply rotation effect - show one at a time with looping
-  useEffect(() => {
-    // Clear any existing interval
-    if (instantReplyIntervalRef.current) {
-      clearInterval(instantReplyIntervalRef.current);
-    }
-
-    // Only start rotation if we have instant replies showing and messages
-    if (showInstantReplies && instantReplies.length > 1) {
-      // Rotate through instant replies every 4 seconds
-      instantReplyIntervalRef.current = setInterval(() => {
-        setCurrentInstantReplyIndex(
-          (prevIndex) => (prevIndex + 1) % instantReplies.length
-        );
-      }, 4000);
-    }
-
-    // Cleanup on unmount or when instant replies change
-    return () => {
-      if (instantReplyIntervalRef.current) {
-        clearInterval(instantReplyIntervalRef.current);
-        instantReplyIntervalRef.current = null;
-      }
-    };
-  }, [showInstantReplies, instantReplies.length]);
+  // Instant reply rotation effect - DISABLED
+  // useEffect(() => {
+  //   if (instantReplyIntervalRef.current) {
+  //     clearInterval(instantReplyIntervalRef.current);
+  //   }
+  //   if (showInstantReplies && instantReplies.length > 1) {
+  //     instantReplyIntervalRef.current = setInterval(() => {
+  //       setCurrentInstantReplyIndex(
+  //         (prevIndex) => (prevIndex + 1) % instantReplies.length
+  //       );
+  //     }, 4000);
+  //   }
+  //   return () => {
+  //     if (instantReplyIntervalRef.current) {
+  //       clearInterval(instantReplyIntervalRef.current);
+  //       instantReplyIntervalRef.current = null;
+  //     }
+  //   };
+  // }, [showInstantReplies, instantReplies.length]);
 
   const sendMessage = async (text: string) => {
     handleUserInteraction();
 
-    // Hide instant replies when user sends a regular message
-    setShowInstantReplies(false);
+    // Instant replies disabled
+    // setShowInstantReplies(false);
 
     const newUserMessage: Message = {
       id: Date.now().toString(),
@@ -1120,9 +1114,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
                     onSlotConfirm={handleSlotConfirm}
                     isBatchLoading={batchedMessages}
                     forceScrollKey={forceScrollBottom}
-                    instantReplies={instantReplies}
-                    currentInstantReplyIndex={currentInstantReplyIndex}
-                    showInstantReplies={showInstantReplies}
+                    instantReplies={[]}
+                    currentInstantReplyIndex={0}
+                    showInstantReplies={false}
                     onInstantReplyClick={handleInstantReplyClick}
                     settings={settings}
                   />
