@@ -151,96 +151,103 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       }}
     >
       <div className="space-y-4">
-        {/* Instant Replies Section - Show ONE at a time with high z-index */}
-        <AnimatePresence mode="wait">
-          {showInstantReplies && instantReplies.length > 0 && (
-            <motion.div
-              key={`instant-reply-${currentInstantReplyIndex}`}
-              className="relative z-50"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="flex justify-start">
-                <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center mr-2 mt-1 overflow-hidden flex-shrink-0">
-                  {settings?.avatarUrl ? (
-                    <img
-                      src={settings.avatarUrl}
-                      alt={settings?.name || "Assistant"}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full">
-                      <RiRobot3Line className="text-indigo-300 text-xl" />
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() =>
-                    onInstantReplyClick?.(
-                      instantReplies[currentInstantReplyIndex].message
-                    )
-                  }
-                  className="max-w-[75%] bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg px-4 py-3 text-sm transition-all duration-200 cursor-pointer text-left shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  {instantReplies[currentInstantReplyIndex].message}
-                </button>
-              </div>
-              {/* Indicator dots to show there are more instant replies */}
-              {instantReplies.length > 1 && (
-                <div className="flex justify-start ml-10 mt-2 space-x-1">
-                  {instantReplies.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-1.5 h-1.5 rounded-full transition-all ${
-                        index === currentInstantReplyIndex
-                          ? "bg-indigo-500 w-3"
-                          : "bg-gray-600"
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <AnimatePresence initial={false}>
-          {messages.map((message, index) => (
-            <motion.div
-              key={message.id}
-              initial={
-                isBatchLoading && index < messages.length - 5
-                  ? { opacity: 1, y: 0 }
-                  : { opacity: 0, y: 10, scale: 0.98 }
-              }
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{
-                duration: isBatchLoading ? 0.15 : 0.2, // Faster for batch, smooth for real-time
-                delay: getMessageDelay(index, messages.length),
-                ease: "easeOut", // Smoother than spring for batch loading
-              }}
-              onAnimationComplete={() => {
-                // Ensure we're still at the bottom after each message animates
-                // Only scroll if no instant replies are showing
-                if (
-                  index === messages.length - 1 &&
-                  (!showInstantReplies || instantReplies.length === 0)
-                ) {
-                  scrollToBottom();
-                }
-              }}
-            >
-              <MessageBubble
-                message={message}
-                onOptionClick={onOptionClick}
-                onSlotSelect={onSlotSelect}
-                onSlotConfirm={onSlotConfirm}
-                settings={settings}
-              />
-            </motion.div>
-          ))}
+          {messages.map((message, index) => {
+            // Check if this is the welcome message to insert instant replies after it
+            const isWelcomeMessage = message.id === "__welcome__";
+
+            return (
+              <div key={message.id}>
+                {/* Render the message */}
+                <motion.div
+                  initial={
+                    isBatchLoading && index < messages.length - 5
+                      ? { opacity: 1, y: 0 }
+                      : { opacity: 0, y: 10, scale: 0.98 }
+                  }
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{
+                    duration: isBatchLoading ? 0.15 : 0.2,
+                    delay: getMessageDelay(index, messages.length),
+                    ease: "easeOut",
+                  }}
+                  onAnimationComplete={() => {
+                    if (
+                      index === messages.length - 1 &&
+                      (!showInstantReplies || instantReplies.length === 0)
+                    ) {
+                      scrollToBottom();
+                    }
+                  }}
+                >
+                  <MessageBubble
+                    message={message}
+                    onOptionClick={onOptionClick}
+                    onSlotSelect={onSlotSelect}
+                    onSlotConfirm={onSlotConfirm}
+                    settings={settings}
+                  />
+                </motion.div>
+
+                {/* Show instant replies AFTER welcome message */}
+                {isWelcomeMessage &&
+                  showInstantReplies &&
+                  instantReplies.length > 0 && (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={`instant-reply-${currentInstantReplyIndex}`}
+                        className="relative z-50 mt-4"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="flex justify-start">
+                          <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center mr-2 mt-1 overflow-hidden flex-shrink-0">
+                            {settings?.avatarUrl ? (
+                              <img
+                                src={settings.avatarUrl}
+                                alt={settings?.name || "Assistant"}
+                                className="w-full h-full object-cover rounded-full"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center w-full h-full">
+                                <RiRobot3Line className="text-indigo-300 text-xl" />
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() =>
+                              onInstantReplyClick?.(
+                                instantReplies[currentInstantReplyIndex].message
+                              )
+                            }
+                            className="max-w-[75%] bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg px-4 py-3 text-sm transition-all duration-200 cursor-pointer text-left shadow-lg hover:shadow-xl transform hover:scale-105"
+                          >
+                            {instantReplies[currentInstantReplyIndex].message}
+                          </button>
+                        </div>
+                        {/* Indicator dots */}
+                        {instantReplies.length > 1 && (
+                          <div className="flex justify-start ml-10 mt-2 space-x-1">
+                            {instantReplies.map((_, idx) => (
+                              <div
+                                key={idx}
+                                className={`w-1.5 h-1.5 rounded-full transition-all ${
+                                  idx === currentInstantReplyIndex
+                                    ? "bg-indigo-500 w-3"
+                                    : "bg-gray-600"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                  )}
+              </div>
+            );
+          })}
         </AnimatePresence>
 
         <AnimatePresence>

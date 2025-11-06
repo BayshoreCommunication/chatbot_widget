@@ -427,8 +427,9 @@ const ChatBot: React.FC<ChatBotProps> = ({
               data.user_data.conversation_history
             );
 
-            // Hide instant replies before showing history
-            setShowInstantReplies(false);
+            // Don't hide instant replies when loading history
+            // They should show at the top after video/welcome
+            // setShowInstantReplies(false); // REMOVED - keep instant replies visible
 
             // Set messages immediately for faster loading
             setMessages(historyMessages);
@@ -938,16 +939,29 @@ const ChatBot: React.FC<ChatBotProps> = ({
   );
 
   const displayMessages: Message[] = useMemo(() => {
-    // If we have conversation history (messages length > 0), don't show welcome/intro
-    // Only show welcome message for brand new conversations
-    if (messages.length > 0) {
-      return messages;
+    // Always show intro video and welcome message at the top
+    // Then append conversation history below
+    const introMessages: Message[] = [];
+
+    // Add video if available
+    if (introVideoMessage) {
+      introMessages.push(introVideoMessage);
     }
 
-    // For new conversations, show intro video + welcome message
-    return introVideoMessage
-      ? [introVideoMessage, inlineWelcomeMessage]
-      : [inlineWelcomeMessage];
+    // Add welcome message
+    introMessages.push(inlineWelcomeMessage);
+
+    // If we have conversation history, append it after intro messages
+    if (messages.length > 0) {
+      // Filter out the intro messages from history to avoid duplicates
+      const historyWithoutIntro = messages.filter(
+        (msg) => msg.id !== "__intro_video__" && msg.id !== "__welcome__"
+      );
+      return [...introMessages, ...historyWithoutIntro];
+    }
+
+    // For brand new conversations, just show intro messages
+    return introMessages;
   }, [introVideoMessage, inlineWelcomeMessage, messages]);
 
   return (
