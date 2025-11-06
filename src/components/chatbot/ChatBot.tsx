@@ -366,6 +366,12 @@ const ChatBot: React.FC<ChatBotProps> = ({
 
   useEffect(() => {
     // Load history when chat opens and history hasn't been fetched yet
+    console.log("🔍 History useEffect triggered:", {
+      isOpen,
+      historyFetched,
+      sessionId,
+    });
+
     if (!isOpen) {
       // Reset history flag when chat closes so it reloads on next open
       if (historyFetched) {
@@ -385,13 +391,19 @@ const ChatBot: React.FC<ChatBotProps> = ({
       isOpen,
       historyFetched,
       sessionId,
+      apiKey: apiKey ? "present" : "missing",
     });
 
     // Add delay to allow chat animation and instant replies to render first
     const delayTimer = setTimeout(() => {
+      console.log("⏰ Delay timer fired, starting history fetch...");
+
       const run = async () => {
+        console.log("🚀 Starting history fetch async function...");
         // Always use in-memory sessionId to avoid race with localStorage
         setIsLoading(true);
+        console.log("⏳ Loading state set to true");
+
         try {
           console.log(
             "📡 Fetching conversation history for session:",
@@ -991,13 +1003,20 @@ const ChatBot: React.FC<ChatBotProps> = ({
     [resolvedWelcomeText]
   );
 
-  const displayMessages: Message[] = useMemo(
-    () =>
-      introVideoMessage
-        ? [introVideoMessage, inlineWelcomeMessage, ...messages]
-        : [inlineWelcomeMessage, ...messages],
-    [introVideoMessage, inlineWelcomeMessage, messages]
-  );
+  const displayMessages: Message[] = useMemo(() => {
+    // If we have conversation history (messages length > 0), don't show welcome/intro
+    // Only show welcome message for brand new conversations
+    if (messages.length > 0) {
+      console.log("📝 Showing history messages (no welcome):", messages.length);
+      return messages;
+    }
+
+    // For new conversations, show intro video + welcome message
+    console.log("👋 Showing welcome message (new conversation)");
+    return introVideoMessage
+      ? [introVideoMessage, inlineWelcomeMessage]
+      : [inlineWelcomeMessage];
+  }, [introVideoMessage, inlineWelcomeMessage, messages]);
 
   return (
     <>
